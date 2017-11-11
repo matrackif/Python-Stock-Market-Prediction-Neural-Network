@@ -12,25 +12,23 @@ from keras.losses import mean_absolute_error
 
 
 if __name__ == '__main__':
-    # df_dates = pd.read_csv('./dates_daily_CDR.csv', header=None)
-    # df_target = pd.read_csv('./results_daily_CDR.csv', header=None)
-    # print('Head of dates: \n' + str(df_dates.head()))
-    # print('Head of targets: \n' + str(df_target.head()))
-
     normalizer = StandardScaler()
-    # df = df_target
-    df = pd.read_csv('../data/corrected_dates.csv') # By default header will be read
-    # df['dates'] = df_dates
-    # df.rename(columns={0: 'open', 1: 'high', 2: 'low', 3: 'close'}, inplace=True)  # Rename columns of data frame
+    df = pd.read_csv('../data/corrected_dates.csv')  # By default header will be read from file
+
     print('Head of data frame: \n' + str(df.head()))
     print('Dimensions of data frame (row x col)' + str(df.shape))
+
     num_of_rows = df.shape[0]
+
     print('Number of rows in data frame: ' + str(num_of_rows))
     print('----------SPLITTING DATA INTO TRAINING AND TEST SETS----------')
+
     training_set_size = int(0.8 * num_of_rows)
     test_set_size = int(num_of_rows - training_set_size)
+
     print('Training set size: ' + str(training_set_size))
     print('Test set size: ' + str(test_set_size))
+
     df_train, df_test = df[test_set_size:], df[:test_set_size]
     print('Dimensions of training data frame (row x col)' + str(df_train.shape))
     print('Dimensions of test data frame (row x col)' + str(df_test.shape))
