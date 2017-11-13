@@ -2,6 +2,23 @@ import argparse
 import csv
 import datetime
 
+
+def from_timestamp_to_unix_time(timestamp: str) -> int:
+    # Convert date of form year-month-day to unix time
+    timestamp_as_list = timestamp.split('-')
+    year = int(timestamp_as_list[0])
+    month = int(timestamp_as_list[1])
+    day = int(timestamp_as_list[2])
+    date = datetime.datetime(year=year, month=month, day=day, tzinfo=datetime.timezone.utc)  # Convert to UTC time
+    time = int(date.timestamp())
+    # print('Year: ' + str(year) + ' Month: ' + str(month) + ' Day: '
+    #       + str(day) + ' Unix Time UTC: ' + str(time))
+    return time
+
+
+def from_unix_time_to_timestamp(time: int) -> str:
+    return str(datetime.datetime.utcfromtimestamp(time))
+
 if __name__ == '__main__':
     print('Converting first column of csv file to unix time')
     parser = argparse.ArgumentParser()
@@ -27,15 +44,8 @@ if __name__ == '__main__':
             count += 1
             writer.writerow(row)
             continue
-        timestamp_as_list = row[0].split('-')
-        year = int(timestamp_as_list[0])
-        month = int(timestamp_as_list[1])
-        day = int(timestamp_as_list[2])
-        date = datetime.datetime(year=year, month=month, day=day, tzinfo=datetime.timezone.utc)  # Convert to UTC time
-        unix_time = int(date.timestamp())
-        print('Year: ' + str(year) + ' Month: ' + str(month) + ' Day: '
-              + str(day) + ' Unix Time UTC: ' + str(unix_time))
-        # print(datetime.datetime.utcfromtimestamp(unix_time))
+        unix_time = from_timestamp_to_unix_time(row[0])
+        # print(from_unix_time_to_timestamp(unix_time))
         row[0] = str(unix_time)
         # row.remove(row[len(row) - 1])  # Remove volume
         writer.writerow(row)

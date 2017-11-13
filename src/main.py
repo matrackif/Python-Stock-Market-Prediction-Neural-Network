@@ -2,6 +2,7 @@ import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 import datetime
+import src.csv_parser as CsvParser
 from sklearn.preprocessing import StandardScaler
 from keras.models import Sequential
 from keras.layers import Dense, BatchNormalization
@@ -50,9 +51,14 @@ if __name__ == '__main__':
     # Remove last (oldest) open price in y, since it does not have a previous open day
     y_tmp = y_tr.values[:-1, :]
     X_tmp_te = np.concatenate([X_te_tmp.reshape(-1, 1), X_te2_tmp.reshape(-1, 1)], axis=1)
+    test_set_size = X_te_tmp.shape[0]
+    training_set_size = X_tr_tmp.shape[0]
+    print('Training set size (after shifting): ' + str(training_set_size))
+    print('Test set size: (after shifting)' + str(test_set_size))
 
+    print('X_tmp: \n' + str(X_tmp))
     model = Sequential()
-    model.add(BatchNormalization(input_shape=(2,)))
+    model.add(BatchNormalization(input_shape=(2,)))  # Equivalent to input_dim=2 since we have 2 columns of input
     model.add(Dense(1024, use_bias=False, activation='tanh'))  # Dense means all nodes are connected with each other
     model.add(Dense(1, use_bias=False))
     model.summary()
@@ -60,21 +66,53 @@ if __name__ == '__main__':
     # Num of epochs in num of iterations where it takes batch_size number elements from X and y
     model.fit(X_tmp, y_tmp[:, 0], epochs=40, batch_size=32)
 
-    row = '2017-11-07'
-    open_of_prev_day = 5.8600
-    # Convert date of form year-month-day to unix time
-    timestamp_as_list = row.split('-')
-    year = int(timestamp_as_list[0])
-    month = int(timestamp_as_list[1])
-    day = int(timestamp_as_list[2])
-    date = datetime.datetime(year=year, month=month, day=day, tzinfo=datetime.timezone.utc)  # Convert to UTC time
-    unix_time = int(date.timestamp())
+    some_day = '2017-11-09'
+    open_of_prev_day = 84.1100
+    unix_time = CsvParser.from_timestamp_to_unix_time(some_day)
 
-    print('Prediction for ' + row + ' and open of previous day ' + str(open_of_prev_day) + ' is: ' +
+    print('Prediction for ' + some_day + ' and open of previous day ' + str(open_of_prev_day) + ' is: ' +
           str(model.predict(np.array([[unix_time, open_of_prev_day]]))))
 
     prediction = model.predict(X_tmp_te)
     prediction_tr = model.predict(X_tmp)
+
+    for i in range(test_set_size):
+        d = CsvParser.from_unix_time_to_timestamp(X_tmp_te[i, 0])
+        op = str(X_tmp_te[i, 1])
+        print('Pred for day: ' + d + ' given open price of prev day: ' + op + ' is: ' + str(prediction[i, 0]))
+
+    last_known_open_price = y_te.values[0, 0]
+    last_day_in_data = X_te[0]
+    print('Last known open price: ' + str(last_known_open_price) + ' last day in data: '
+          + CsvParser.from_unix_time_to_timestamp(last_day_in_data))
+    # Prediction of open price for the first future
+    next_day = last_day_in_data + (3600 * 24)
+    print('Next day after last day in data: ' + CsvParser.from_unix_time_to_timestamp(next_day))
+    open_pred = model.predict(np.array([[last_known_open_price, next_day]]))
+    print(str('Pred for day: '
+              + CsvParser.from_unix_time_to_timestamp(next_day)
+              + ' is: ' + str(open_pred))
+              + ' given open price of prev day: ' + str(last_known_open_price))
+
+    predictions = []
+    future_days = []
+
+    for i in range(30):
+        next_day = next_day + (3600 * 24)
+        open_prev = open_pred[0][0]
+        open_pred = model.predict(np.array([[next_day, open_pred[0][0]]]))
+        print(str('Pred for day: ' + str(datetime.datetime.fromtimestamp(next_day).strftime('%Y-%m-%d %H:%M:%S'))
+                    + ' is: ' + str(open_pred))
+                    + ' given open price of prev day: ' + str(open_prev))
+        predictions.append(open_pred[0][0])
+        future_days.append(next_day)
+
+    plt.figure(0)
+    plt.plot(future_days, predictions)
+    plt.xlabel('Date (Unix time)')
+    plt.ylabel('Open price')
+    plt.title('Future Prediction: 1 Month after ' + CsvParser.from_unix_time_to_timestamp(last_day_in_data))
+    plt.show()
 
     plt.figure(1)
     # I add a comma after the var name because of ...
