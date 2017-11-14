@@ -85,24 +85,25 @@ if __name__ == '__main__':
     # normalize features
     scaler = MinMaxScaler(feature_range=(0, 1))
     scaled = scaler.fit_transform(values)
-    num_of_prev_timesteps = 10
-    num_of_future_timesteps = 10
+    num_of_prev_timesteps = 30
+    num_of_future_timesteps = 7
     num_features = 5
     num_prev_objs = num_features * num_of_prev_timesteps
     num_future_objs = num_features * num_of_future_timesteps
     index_of_predicted_feature = 0
     # frame as supervised learning
-    # TODO copy "reframed" and drop the columns we don't want to predict (to make it easier to get test_y)
-    
+    # TODO copy "reframed" and drop the columns we don't want to predict (make it easier to get test_y)
+
     reframed = series_to_supervised(scaled, num_of_prev_timesteps, num_of_future_timesteps)
-    print(str(values))
+    # print(str(values))
+    print(str(reframed.values))
     # drop columns we don't want to predict
     # Only wish to predict "closing price"
     # reframed.drop(reframed.columns[[5, 6, 8, 9]], axis=1, inplace=True)
     print(reframed.head())
     scaled_values = reframed.values  # Extract numpy array from a pandas DataFrame
     print('Dim of scaled_values: ' + str(scaled_values.shape))
-    last_observations = scaled_values[0:num_of_prev_timesteps, :num_prev_objs]
+    last_observations = scaled_values[0:num_of_future_timesteps, -num_prev_objs:]
     print('last_observations: \n' + str(last_observations))
     data_size = reframed.shape[0]
     print('Data size: ' + str(data_size))
@@ -127,7 +128,7 @@ if __name__ == '__main__':
     print('test_set_x_y: \n' + str(test_set_x_y))
     # Create LSTM model
     model = Sequential()
-    model.add(LSTM(64, input_shape=(train_x.shape[1], train_x.shape[2])))
+    model.add(LSTM(1024, input_shape=(train_x.shape[1], train_x.shape[2])))
     model.add(Dense(1))
     model.compile(loss='mae', optimizer='adam')
     # fit network
