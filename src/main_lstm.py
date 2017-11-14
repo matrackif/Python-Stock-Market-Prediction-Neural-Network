@@ -85,7 +85,7 @@ if __name__ == '__main__':
     # normalize features
     scaler = MinMaxScaler(feature_range=(0, 1))
     scaled = scaler.fit_transform(values)
-    num_of_prev_timesteps = 30
+    num_of_prev_timesteps = 7
     num_of_future_timesteps = 7
     num_features = 5
     num_prev_objs = num_features * num_of_prev_timesteps
@@ -132,7 +132,7 @@ if __name__ == '__main__':
     model.add(Dense(1))
     model.compile(loss='mae', optimizer='adam')
     # fit network
-    history = model.fit(train_x, train_y, epochs=10, batch_size=72, validation_data=(test_x, test_y), verbose=2,
+    history = model.fit(train_x, train_y, epochs=20, batch_size=64, validation_data=(test_x, test_y), verbose=2,
                         shuffle=False)
     # plot history
     pyplot.plot(history.history['loss'], label='Training loss (error)')
