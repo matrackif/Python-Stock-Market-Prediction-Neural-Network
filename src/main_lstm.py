@@ -82,26 +82,32 @@ if __name__ == '__main__':
     dataset = read_csv('../data/lstm_dates.csv', header=0, index_col=0)
     values = dataset.values
     values = values.astype('float32')
-    # normalize features
-    scaler = MinMaxScaler(feature_range=(0, 1))
-    scaled = scaler.fit_transform(values)
     num_of_prev_timesteps = 7
     num_of_future_timesteps = 7
     num_features = 5
     num_prev_objs = num_features * num_of_prev_timesteps
     num_future_objs = num_features * num_of_future_timesteps
-    index_of_predicted_feature = 0
-    # frame as supervised learning
-    # TODO copy "reframed" and drop the columns we don't want to predict (make it easier to get test_y)
+    # open = 0, high = 1, low = 2, close = 3, volume = 4
+    index_of_predicted_feature = 1
+    predicted_feature_str = {0: 'Open', 1: 'High', 2: 'Low', 3: 'Close', 4: 'Volume'}[index_of_predicted_feature]
+    print('LSTM will predict ' + predicted_feature_str)
+    # normalize features
+    copied_dataset = dataset.copy()
+    copied_dataset.drop(copied_dataset.columns[[i for i in range(num_features) if i is not index_of_predicted_feature]],
+                        axis=1, inplace=True)
+    copied_dataset_values = copied_dataset.values
+    scaler = MinMaxScaler(feature_range=(0, 1))
+    scaled = scaler.fit_transform(values)
+    scaled_y_only = scaler.fit_transform(copied_dataset_values)
 
+    # frame as supervised learning
     reframed = series_to_supervised(scaled, num_of_prev_timesteps, num_of_future_timesteps)
-    # print(str(values))
-    print(str(reframed.values))
-    # drop columns we don't want to predict
-    # Only wish to predict "closing price"
-    # reframed.drop(reframed.columns[[5, 6, 8, 9]], axis=1, inplace=True)
-    print(reframed.head())
+    reframed_y_only = series_to_supervised(scaled_y_only, num_of_prev_timesteps, num_of_future_timesteps)
+    print('reframed_y_only: \n' + str(reframed_y_only.head()))
+    print('reframed: \n' + str(reframed.head()))
     scaled_values = reframed.values  # Extract numpy array from a pandas DataFrame
+    scaled_values_y_only = reframed_y_only.values
+
     print('Dim of scaled_values: ' + str(scaled_values.shape))
     last_observations = scaled_values[0:num_of_future_timesteps, -num_prev_objs:]
     print('last_observations: \n' + str(last_observations))
@@ -115,17 +121,23 @@ if __name__ == '__main__':
     training_set_x_y = scaled_values[test_set_size:, :]
     # Test set has the newer (time-wise) part of data
     test_set_x_y = scaled_values[:test_set_size, :]
-    train_x, train_y = training_set_x_y[:, :num_prev_objs], training_set_x_y[:, -num_features + index_of_predicted_feature]
-    test_x, test_y = test_set_x_y[:, :num_prev_objs], test_set_x_y[:, -num_features + index_of_predicted_feature]
+    # y_only contains only the time intervals of the variable we want to predict
+    training_set_y_only = scaled_values_y_only[test_set_size:, :]
+    test_set_y_only = scaled_values_y_only[:test_set_size, :]
+
+    train_x, train_y = training_set_x_y[:, :num_prev_objs], training_set_y_only[:, -1]
+    test_x, test_y = test_set_x_y[:, :num_prev_objs], test_set_y_only[:, -1]
     # reshape input to be 3D [samples, timesteps, features] as expected by LSTM
     train_x = train_x.reshape(train_x.shape[0], num_of_prev_timesteps, num_features)
     test_x = test_x.reshape(test_x.shape[0], num_of_prev_timesteps, num_features)
     last_observations = last_observations.reshape(last_observations.shape[0], num_of_prev_timesteps, num_features)
+
     print('Training input size: ' + str(train_x.shape) + '\n'
           + 'Training output size: ' + str(train_y.shape) + '\n'
           + 'Test input size: ' + str(test_x.shape) + '\n'
           + 'Test output size: ' + str(test_y.shape))
     print('test_set_x_y: \n' + str(test_set_x_y))
+
     # Create LSTM model
     model = Sequential()
     model.add(LSTM(1024, input_shape=(train_x.shape[1], train_x.shape[2])))
@@ -149,16 +161,17 @@ if __name__ == '__main__':
     test_prediction_graph, = pyplot.plot(inv_y_pred_test, label='Prediction')
     test_data_graph, = pyplot.plot(inv_y, label='Test data')
     pyplot.xlabel('Days')
-    pyplot.ylabel('Open price')
-    pyplot.title('Prediction of Open Price vs. Test data')
+    pyplot.ylabel(predicted_feature_str)
+    pyplot.title('Prediction of ' + predicted_feature_str + ' vs. Test data')
     pyplot.legend(handles=[test_data_graph, test_prediction_graph])
     pyplot.show()
 
     pyplot.figure(2)
     future_prediction_graph, = pyplot.plot(inv_y_future_pred, label='Future Prediction')
     pyplot.xlabel('N days ahead')
-    pyplot.ylabel('Open price')
-    pyplot.title('Prediction of open price for ' + str(num_of_future_timesteps) + ' days after last data entry')
+    pyplot.ylabel(predicted_feature_str)
+    pyplot.title('Prediction of ' + predicted_feature_str + ' for ' + str(num_of_future_timesteps)
+                 + ' days after last data entry')
     pyplot.legend(handles=[future_prediction_graph])
     pyplot.show()
 
