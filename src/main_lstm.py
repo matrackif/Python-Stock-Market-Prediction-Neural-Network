@@ -2,9 +2,11 @@
 from math import sqrt
 from numpy import concatenate
 from matplotlib import pyplot
+from matplotlib import dates
 from pandas import read_csv
 from pandas import DataFrame
 from pandas import concat
+from pandas import to_datetime
 from sklearn.preprocessing import MinMaxScaler
 from sklearn.preprocessing import LabelEncoder
 from sklearn.metrics import mean_squared_error
@@ -51,62 +53,45 @@ def series_to_supervised(data, n_in=1, n_out=1, dropnan=True):
     return agg
 
 
-def invert(input_x, input_y):
-    input_y = input_y.reshape((len(input_y), 1))
+def invert(input_y):
+    input_y = input_y.reshape((len(input_y), num_features))
     # invert scaling and add missing columns to get back actual value
-    # The only purpose of concatenating the columns is to
-    input_x = input_x.reshape((input_x.shape[0], num_prev_objs))
-    inv_y = concatenate((input_y, input_x[:, -(num_features - 1):]), axis=1)
-    inv_y = scaler.inverse_transform(inv_y)
-    inv_y = inv_y[:, 0]
+    inv_y = scaler.inverse_transform(input_y)
     # Because our data is in decreasing (time-wise) order we have to reverse the result
     inv_y = inv_y[::-1]
     return inv_y
 
 
 def make_pred_and_invert(input_x, nn_model):
-    inv_pred_y = None
     y_pred = nn_model.predict(input_x)
-    # invert scaling and add missing columns to get back actual value
-    # The only purpose of concatenating the columns is to
-    input_x = input_x.reshape((input_x.shape[0], num_prev_objs))
-    inv_pred_y = concatenate((y_pred, input_x[:, -(num_features - 1):]), axis=1)
-    inv_pred_y = scaler.inverse_transform(inv_pred_y)
-    inv_pred_y = inv_pred_y[:, 0]
+    inv_pred_y = scaler.inverse_transform(y_pred)
     # Because our data is in decreasing (time-wise) order we have to reverse the result
     inv_pred_y = inv_pred_y[::-1]
-
     return inv_pred_y
 
 if __name__ == '__main__':
     dataset = read_csv('../data/lstm_dates.csv', header=0, index_col=0)
     values = dataset.values
     values = values.astype('float32')
-    num_of_prev_timesteps = 7
+    num_of_prev_timesteps = 30
     num_of_future_timesteps = 7
     num_features = 5
     num_prev_objs = num_features * num_of_prev_timesteps
     num_future_objs = num_features * num_of_future_timesteps
     # open = 0, high = 1, low = 2, close = 3, volume = 4
-    index_of_predicted_feature = 1
+    index_of_predicted_feature = 1  # The feature that shall be plotted (all will be predicted)
     predicted_feature_str = {0: 'Open', 1: 'High', 2: 'Low', 3: 'Close', 4: 'Volume'}[index_of_predicted_feature]
     print('LSTM will predict ' + predicted_feature_str)
+
     # normalize features
-    copied_dataset = dataset.copy()
-    copied_dataset.drop(copied_dataset.columns[[i for i in range(num_features) if i is not index_of_predicted_feature]],
-                        axis=1, inplace=True)
-    copied_dataset_values = copied_dataset.values
     scaler = MinMaxScaler(feature_range=(0, 1))
     scaled = scaler.fit_transform(values)
-    scaled_y_only = scaler.fit_transform(copied_dataset_values)
 
     # frame as supervised learning
     reframed = series_to_supervised(scaled, num_of_prev_timesteps, num_of_future_timesteps)
-    reframed_y_only = series_to_supervised(scaled_y_only, num_of_prev_timesteps, num_of_future_timesteps)
-    print('reframed_y_only: \n' + str(reframed_y_only.head()))
+
     print('reframed: \n' + str(reframed.head()))
     scaled_values = reframed.values  # Extract numpy array from a pandas DataFrame
-    scaled_values_y_only = reframed_y_only.values
 
     print('Dim of scaled_values: ' + str(scaled_values.shape))
     last_observations = scaled_values[0:num_of_future_timesteps, -num_prev_objs:]
@@ -121,12 +106,17 @@ if __name__ == '__main__':
     training_set_x_y = scaled_values[test_set_size:, :]
     # Test set has the newer (time-wise) part of data
     test_set_x_y = scaled_values[:test_set_size, :]
-    # y_only contains only the time intervals of the variable we want to predict
-    training_set_y_only = scaled_values_y_only[test_set_size:, :]
-    test_set_y_only = scaled_values_y_only[:test_set_size, :]
+    print(dataset.head())
 
-    train_x, train_y = training_set_x_y[:, :num_prev_objs], training_set_y_only[:, -1]
-    test_x, test_y = test_set_x_y[:, :num_prev_objs], test_set_y_only[:, -1]
+    test_dates_dataframe = dataset.reset_index()["date"]
+    test_datetimes = to_datetime(test_dates_dataframe.values)
+    list_test_datetimes = test_datetimes.to_pydatetime().tolist()[:test_set_size]
+    matplot_test_dates = dates.date2num(list_test_datetimes)
+    matplot_test_dates = matplot_test_dates[::-1]
+
+    train_x, train_y = training_set_x_y[:, :num_prev_objs], training_set_x_y[:, -num_features:]
+    test_x, test_y = test_set_x_y[:, :num_prev_objs], test_set_x_y[:, -num_features:]
+    print('Test y: \n' + str(test_y))
     # reshape input to be 3D [samples, timesteps, features] as expected by LSTM
     train_x = train_x.reshape(train_x.shape[0], num_of_prev_timesteps, num_features)
     test_x = test_x.reshape(test_x.shape[0], num_of_prev_timesteps, num_features)
@@ -141,33 +131,35 @@ if __name__ == '__main__':
     # Create LSTM model
     model = Sequential()
     model.add(LSTM(1024, input_shape=(train_x.shape[1], train_x.shape[2])))
-    model.add(Dense(1))
+    model.add(Dense(num_features))
     model.compile(loss='mae', optimizer='adam')
     # fit network
     history = model.fit(train_x, train_y, epochs=20, batch_size=64, validation_data=(test_x, test_y), verbose=2,
                         shuffle=False)
     # plot history
+    pyplot.figure(0)
     pyplot.plot(history.history['loss'], label='Training loss (error)')
     pyplot.plot(history.history['val_loss'], label='Test loss (error)')
     pyplot.legend()
     pyplot.show()
 
     # Make prediction for future given last N observations
-    inv_y = invert(input_x=test_x, input_y=test_y)
+    inv_y = invert(input_y=test_y)
     inv_y_pred_test = make_pred_and_invert(input_x=test_x, nn_model=model)
     inv_y_future_pred = make_pred_and_invert(input_x=last_observations, nn_model=model)
 
     pyplot.figure(1)
-    test_prediction_graph, = pyplot.plot(inv_y_pred_test, label='Prediction')
-    test_data_graph, = pyplot.plot(inv_y, label='Test data')
-    pyplot.xlabel('Days')
+    print(str(inv_y))
+    test_prediction_graph, = pyplot.plot_date(matplot_test_dates, inv_y[:, index_of_predicted_feature], 'b-', label='Prediction', color="blue")
+    test_data_graph, = pyplot.plot_date(matplot_test_dates, inv_y_pred_test[:, index_of_predicted_feature], 'b-', label='Test data', color="red")
+    pyplot.xlabel('Date')
     pyplot.ylabel(predicted_feature_str)
     pyplot.title('Prediction of ' + predicted_feature_str + ' vs. Test data')
     pyplot.legend(handles=[test_data_graph, test_prediction_graph])
     pyplot.show()
 
     pyplot.figure(2)
-    future_prediction_graph, = pyplot.plot(inv_y_future_pred, label='Future Prediction')
+    future_prediction_graph, = pyplot.plot(inv_y_future_pred[:, index_of_predicted_feature], label='Future Prediction')
     pyplot.xlabel('N days ahead')
     pyplot.ylabel(predicted_feature_str)
     pyplot.title('Prediction of ' + predicted_feature_str + ' for ' + str(num_of_future_timesteps)
@@ -176,5 +168,5 @@ if __name__ == '__main__':
     pyplot.show()
 
     # calculate RMSE
-    rmse = sqrt(mean_squared_error(inv_y, inv_y_pred_test))
-    print('Test RMSE: %.3f' % rmse)
+    rmse = sqrt(mean_squared_error(inv_y[:, index_of_predicted_feature], inv_y_pred_test[:, index_of_predicted_feature]))
+    print('Test RMSE (for ' + predicted_feature_str + ') is: %.3f' % rmse)
