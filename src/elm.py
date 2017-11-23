@@ -14,18 +14,92 @@ from keras.losses import mean_absolute_error
 from keras.models import Model
 import keras.backend as K
 
+
 # See these 2 links about passing custom variables to a Keras layer
 # https://www.tensorflow.org/api_docs/python/tf/keras/backend/variable
 # https://keras.io/initializers/
+class ELM:
+    def __init__(self, csv_file: str = '../data/corrected_dates.csv',
+                 index_of_plotted_feature: int = 0, train_w: bool = False):
+        df = pd.read_csv(csv_file)  # By default header will be read from file
+        num_of_rows = df.shape[0]
+        self.num_features = 4
+        self.num_hidden_layer_neurons = 1024
+        self.index_of_plotted_feature = index_of_plotted_feature
+        self.train_w = train_w
+        print('Head of data frame: \n' + str(df.head()))
+        print('Dimensions of data frame (row x col)' + str(df.shape))
+        self.training_set_size = int(0.8 * num_of_rows)
+        self.test_set_size = int(num_of_rows - self.training_set_size)
+        print('Training set size: ' + str(self.training_set_size))
+        print('Test set size: ' + str(self.test_set_size))
+        df_train, df_test = df[self.test_set_size:], df[:self.test_set_size]
+        print('Dimensions of training data frame (row x col)' + str(df_train.shape))
+        print('Dimensions of test data frame (row x col)' + str(df_test.shape))
+        self.x_tr = df_train[['open', 'high', 'low', 'close']]
+        self.x_te = df_test[['open', 'high', 'low', 'close']]
+        self.y_tr = df_train[['open', 'high', 'low', 'close']]
+        self.y_te = df_test[['open', 'high', 'low', 'close']]
 
+        # Shift arrays so that we predict prices for time t given (t-1)
+        self.x_tr = self.x_tr.values[1:, :]
+        self.x_te = self.x_te.values[1:, :]
+        self.y_tr = self.y_tr.values[:-1, :]
+        self.y_te = self.y_te.values[:-1, :]
+        print('y_te: ' + str(self.y_te))
+        # Create Keras NN model to get H
+        self.input_shape = (self.num_features,)
+        self.hidden_layer_name = 'hidden_layer'
+        self.input_layer_name = 'input_layer'
+        self.model = Sequential()
+        self.model.add(Dense(self.num_features, input_shape=self.input_shape, name=self.input_layer_name))
+        self.model.add(
+            Dense(self.num_hidden_layer_neurons, activation='tanh', use_bias=False, name=self.hidden_layer_name))
 
-def elm_weights_init(shape, dtype='float32', beta=None):
-    # Initialize ELM weights as numpy array
-    # elm_weights_arr = np.array(beta)
-    elm_var = K.variable(value=beta, dtype=dtype, name='elm_var')
-    return elm_var
+    def create_h(self):
+        h = None
+        if self.train_w:
+            # Train w but do not train "beta"
+            temp_hidden_name = 'temp_hidden'
+            temp_model = Sequential()
+            temp_model.add(Dense(self.num_features, use_bias=False, input_shape=self.input_shape))
+            temp_model.add(Dense(self.num_hidden_layer_neurons, activation='tanh', use_bias=False, name='temp_hidden',
+                                 weights=self.model.get_layer(self.hidden_layer_name).get_weights()))
+            temp_model.add(Dense(self.num_features, use_bias=False, trainable=False))
+            temp_model.compile('adam', 'mse', metrics=['mse'])
+            temp_model.fit(self.x_tr, self.x_tr, epochs=10, batch_size=32)
+            hidden_layer_only_model = Model(inputs=temp_model.input,
+                                            outputs=temp_model.get_layer(temp_hidden_name).output)
+            h = np.mat(hidden_layer_only_model.predict(self.x_tr))
+        else:
+            h = np.mat(self.model.predict(self.x_tr))
+
+        print('Created h with shape: ' + str(h.shape) + '\n And values: \n' + str(h))
+        return h
+
+    def train(self):
+        H = self.create_h()
+        T = np.mat(self.y_tr)
+        print('Shape of T: ' + str(T.shape) + '\n And values: \n' + str(T))
+        beta = np.linalg.pinv(H) * np.mat(T)
+        self.model.add(Dense(self.num_features, use_bias=False, weights=[beta]))
+        print('Finished training ELM, model summary:')
+        self.model.summary()
+
+    def predict(self):
+        last_day_in_data = np.array([self.y_te[0]])
+        print('Prediction for last day in data with values:' + str(last_day_in_data) + ' with shape: '
+              + str(last_day_in_data.shape))
+        print(str(self.model.predict(last_day_in_data)))
+        training_pred = self.model.predict(self.x_tr)
+        test_pred = self.model.predict(self.x_te)
+        return training_pred, test_pred
+
 
 if __name__ == '__main__':
+    elm = ELM()
+    elm.train()
+    '''
     normalizer = StandardScaler()
     df = pd.read_csv('../data/corrected_dates.csv')  # By default header will be read from file
 
@@ -135,23 +209,6 @@ if __name__ == '__main__':
     print('Prediction for ' + some_day + ' and open of previous day ' + str(open_of_prev_day) + ' is: ' +
           str(model.predict(np.array([[open_of_prev_day]]))))
 
-    '''
-    print('Type of model.input is: ' + str(type(model.input)) + '\n and it contains: ' + str(K.eval(model.input)))
-    inp = K.variable(value=np.array([[unix_time, open_of_prev_day]]), dtype='float64', name='elm_var')  # input placeholder
-    print('Value of input is: ' + str(inp) + ' eval(): ' + str(K.eval(inp)))
-    outputs = [layer.output for layer in model.layers]  # all layer outputs
-    functors = [K.function([inp] + [K.learning_phase()], [out]) for out in outputs]  # evaluation functions
-
-    # Testing
-    test = np.random.random(input_shape)[np.newaxis, ...]
-    layer_outs = [func([test, 1.]) for func in functors]
-    print('LAYER OUTPUTS:')
-    count = 0
-    for output in layer_outs:
-        print('Output of layer: ' + str(count) + ' is: ' + str(str(output)))
-        print('Len of layer: ' + str(count) + ' is: ' + str(len(output)))
-        count += 1
-    '''
     prediction = model.predict(X_te2_tmp)
     prediction_tr = model.predict(X_tr2_tmp)
     prediction_elm_tr = elm_model.predict(X_tr2_tmp)
@@ -175,26 +232,26 @@ if __name__ == '__main__':
               + ' is: ' + str(open_pred))
               + ' given open price of prev day: ' + str(last_known_open_price))
 
-    '''
+    
     predictions = []
-        future_days = []
-        for i in range(30):
-            next_day = next_day + (3600 * 24)
-            open_prev = open_pred[0][0]
-            open_pred = model.predict(np.array([[next_day, open_pred[0][0]]]))
-            # print(str('Pred for day: ' + str(datetime.datetime.fromtimestamp(next_day).strftime('%Y-%m-%d %H:%M:%S'))
-            #             + ' is: ' + str(open_pred))
-            #             + ' given open price of prev day: ' + str(open_prev))
-            predictions.append(open_pred[0][0])
-            future_days.append(next_day)
+    future_days = []
+    for i in range(30):
+        next_day = next_day + (3600 * 24)
+        open_prev = open_pred[0][0]
+        open_pred = model.predict(np.array([[next_day, open_pred[0][0]]]))
+        # print(str('Pred for day: ' + str(datetime.datetime.fromtimestamp(next_day).strftime('%Y-%m-%d %H:%M:%S'))
+        #             + ' is: ' + str(open_pred))
+        #             + ' given open price of prev day: ' + str(open_prev))
+        predictions.append(open_pred[0][0])
+        future_days.append(next_day)
 
-        plt.figure(0)
-        plt.plot(future_days, predictions)
-        plt.xlabel('Date (Unix time)')
-        plt.ylabel('Open price')
-        plt.title('Future Prediction: 1 Month after ' + CsvParser.from_unix_time_to_timestamp(last_day_in_data))
-        plt.show()
-    '''
+    plt.figure(0)
+    plt.plot(future_days, predictions)
+    plt.xlabel('Date (Unix time)')
+    plt.ylabel('Open price')
+    plt.title('Future Prediction: 1 Month after ' + CsvParser.from_unix_time_to_timestamp(last_day_in_data))
+    plt.show()
+    
 
     plt.figure(1)
     # I add a comma after the var name because of ...
@@ -236,3 +293,4 @@ if __name__ == '__main__':
     plt.title('ELM Prediction of Open Price')
     plt.legend(handles=[training_data_graph, elm_training_prediction_graph])
     plt.show()
+    '''

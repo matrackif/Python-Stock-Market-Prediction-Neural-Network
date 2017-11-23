@@ -10,76 +10,15 @@ from sklearn.metrics import mean_squared_error
 from keras.activations import relu, elu
 from keras.layers.advanced_activations import LeakyReLU, PReLU
 from keras.losses import mean_absolute_error
-
+from src.elm import ELM
+from src.regular_model import RegularModel
 
 if __name__ == '__main__':
-    normalizer = StandardScaler()
-    df = pd.read_csv('../data/corrected_dates.csv')  # By default header will be read from file
-
-    print('Head of data frame: \n' + str(df.head()))
-    print('Dimensions of data frame (row x col)' + str(df.shape))
-
-    num_of_rows = df.shape[0]
-
-    print('Number of rows in data frame: ' + str(num_of_rows))
-    print('----------SPLITTING DATA INTO TRAINING AND TEST SETS----------')
-
-    training_set_size = int(0.8 * num_of_rows)
-    test_set_size = int(num_of_rows - training_set_size)
-
-    print('Training set size: ' + str(training_set_size))
-    print('Test set size: ' + str(test_set_size))
-
-    df_train, df_test = df[test_set_size:], df[:test_set_size]
-    print('Dimensions of training data frame (row x col)' + str(df_train.shape))
-    print('Dimensions of test data frame (row x col)' + str(df_test.shape))
-
-    X_tr, y_tr = df_train['timestamp'], df_train[['open', 'high', 'low', 'close']]
-    X_te, y_te = df_test['timestamp'], df_test[['open', 'high', 'low', 'close']]
-    # X_tr_tmp is all training dates except for last one (oldest) because we do not have open price of previous day
-    X_tr_tmp = X_tr.values[:-1]
-    # X_tr2_tmp represents the open price of the previous day
-    # So for example if X_tr_tmp[0] is Nov 3, then X_tr2_tmp[0] is then open price for Nov 2
-    # We take all rows besides first one because first open price y_tr.values[0,0] does not have a future date
-    X_tr2_tmp = y_tr.values[1:, 0]
-
-    # We do the same thing as we did above for the test set
-    X_te_tmp = X_te.values[:-1]
-    X_te2_tmp = y_te.values[1:, 0]
-
-    X_tmp = np.concatenate([X_tr_tmp.reshape(-1, 1), X_tr2_tmp.reshape(-1, 1)], axis=1)
-    # Remove last (oldest) open price in y, since it does not have a previous open day
-    y_tmp = y_tr.values[:-1, :]
-    X_tmp_te = np.concatenate([X_te_tmp.reshape(-1, 1), X_te2_tmp.reshape(-1, 1)], axis=1)
-    test_set_size = X_te_tmp.shape[0]
-    training_set_size = X_tr_tmp.shape[0]
-    print('Training set size (after shifting): ' + str(training_set_size))
-    print('Test set size: (after shifting)' + str(test_set_size))
-
-    print('X_tmp: \n' + str(X_tmp))
-    model = Sequential()
-    model.add(BatchNormalization(input_shape=(2,)))  # Equivalent to input_dim=2 since we have 2 columns of input
-    model.add(Dense(1024, use_bias=False, activation='tanh'))  # Dense means all nodes are connected with each other
-    model.add(Dense(1, use_bias=False))
-    model.summary()
-    model.compile('adam', 'mse', metrics=['mse'])
-    # Num of epochs in num of iterations where it takes batch_size number elements from X and y
-    model.fit(X_tmp, y_tmp[:, 0], epochs=40, batch_size=32)
-
-    some_day = '2017-11-09'
-    open_of_prev_day = 84.1100
-    unix_time = CsvParser.from_timestamp_to_unix_time(some_day)
-
-    print('Prediction for ' + some_day + ' and open of previous day ' + str(open_of_prev_day) + ' is: ' +
-          str(model.predict(np.array([[unix_time, open_of_prev_day]]))))
-
-    prediction = model.predict(X_tmp_te)
-    prediction_tr = model.predict(X_tmp)
-
+    '''
     for i in range(test_set_size):
-        d = CsvParser.from_unix_time_to_timestamp(X_tmp_te[i, 0])
-        op = str(X_tmp_te[i, 1])
-        print('Pred for day: ' + d + ' given open price of prev day: ' + op + ' is: ' + str(prediction[i, 0]))
+    d = CsvParser.from_unix_time_to_timestamp(X_tmp_te[i, 0])
+    op = str(X_tmp_te[i, 1])
+    print('Pred for day: ' + d + ' given open price of prev day: ' + op + ' is: ' + str(prediction[i, 0]))
 
     last_known_open_price = y_te.values[0, 0]
     last_day_in_data = X_te[0]
@@ -106,14 +45,37 @@ if __name__ == '__main__':
                     + ' given open price of prev day: ' + str(open_prev))
         predictions.append(open_pred[0][0])
         future_days.append(next_day)
-
     plt.figure(0)
     plt.plot(future_days, predictions)
     plt.xlabel('Date (Unix time)')
     plt.ylabel('Open price')
     plt.title('Future Prediction: 1 Month after ' + CsvParser.from_unix_time_to_timestamp(last_day_in_data))
     plt.show()
+    '''
+    reg_model = RegularModel()
+    elm = ELM()
+    reg_model.train()
+    elm.train()
+    real_train = elm.x_tr
+    real_test = elm.x_te
+    elm_train_pred, elm_test_pred = elm.predict()
+    reg_train_pred, reg_test_pred = reg_model.predict()
+    index_of_plotted_feature = elm.index_of_plotted_feature
 
+    plt.figure(0)
+    training_data_graph, = plt.plot(real_train[:, index_of_plotted_feature], label='Actual training data')
+    training_prediction_graph, = plt.plot(reg_train_pred[:, index_of_plotted_feature],
+                                          label='Prediction of training data')
+    training_prediction_elm_graph, = plt.plot(elm_train_pred[:, index_of_plotted_feature],
+                                              label='ELM Prediction of training data')
+
+    plt.xlabel('Days')
+    plt.ylabel('Value')
+    plt.title('ELM vs Reg model vs Real data')
+    plt.legend(handles=[training_data_graph, training_prediction_graph, training_prediction_elm_graph])
+    plt.show()
+
+    '''
     plt.figure(1)
     # I add a comma after the var name because of ...
     # https://stackoverflow.com/questions/36329269/python-legend-attribute-error
@@ -132,3 +94,5 @@ if __name__ == '__main__':
     plt.title('Prediction of Open Price')
     plt.legend(handles=[test_data_graph, test_prediction_graph])
     plt.show()
+    '''
+
