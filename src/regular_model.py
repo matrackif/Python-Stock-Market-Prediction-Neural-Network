@@ -51,9 +51,9 @@ class RegularModel:
         self.hidden_layer_name = 'hidden_layer'
         self.input_layer_name = 'input_layer'
         self.model = Sequential()
-        self.model.add(Dense(self.num_features, input_shape=self.input_shape, name=self.input_layer_name))
+        # self.model.add(Dense(self.num_features, input_shape=self.input_shape, name=self.input_layer_name))
         self.model.add(
-            Dense(self.num_hidden_layer_neurons, activation='tanh', use_bias=False, name=self.hidden_layer_name))
+            Dense(self.num_hidden_layer_neurons, activation='tanh', name=self.hidden_layer_name, input_shape=self.input_shape))
         self.model.add(Dense(self.num_features))
         self.model.compile('adam', 'mse', metrics=['mse'])
         print('Regular model summary:')

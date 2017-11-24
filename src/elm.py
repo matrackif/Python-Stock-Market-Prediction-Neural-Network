@@ -24,7 +24,7 @@ class ELM:
         df = pd.read_csv(csv_file)  # By default header will be read from file
         num_of_rows = df.shape[0]
         self.num_features = 4
-        self.num_hidden_layer_neurons = 1024
+        self.num_hidden_layer_neurons = 512
         self.index_of_plotted_feature = index_of_plotted_feature
         self.train_w = train_w
         print('Head of data frame: \n' + str(df.head()))
@@ -51,10 +51,11 @@ class ELM:
         self.input_shape = (self.num_features,)
         self.hidden_layer_name = 'hidden_layer'
         self.input_layer_name = 'input_layer'
+        # https://stackoverflow.com/questions/44747343/keras-input-explanation-input-shape-units-batch-size-dim-etc
         self.model = Sequential()
-        self.model.add(Dense(self.num_features, input_shape=self.input_shape, name=self.input_layer_name))
-        self.model.add(
-            Dense(self.num_hidden_layer_neurons, activation='tanh', use_bias=False, name=self.hidden_layer_name))
+        # self.model.add(Dense(200, input_shape=self.input_shape, use_bias=True, name=self.input_layer_name))
+        self.model.add(Dense(self.num_hidden_layer_neurons, activation='sigmoid',
+                             name=self.hidden_layer_name, input_shape=self.input_shape))
 
     def create_h(self):
         h = None
@@ -62,9 +63,10 @@ class ELM:
             # Train w but do not train "beta"
             temp_hidden_name = 'temp_hidden'
             temp_model = Sequential()
-            temp_model.add(Dense(self.num_features, use_bias=False, input_shape=self.input_shape))
-            temp_model.add(Dense(self.num_hidden_layer_neurons, activation='tanh', use_bias=False, name='temp_hidden',
-                                 weights=self.model.get_layer(self.hidden_layer_name).get_weights()))
+            # temp_model.add(Dense(self.num_features, input_shape=self.input_shape))
+            temp_model.add(Dense(self.num_hidden_layer_neurons, activation='sigmoid', name=temp_hidden_name,
+                                 weights=self.model.get_layer(self.hidden_layer_name).get_weights(),
+                                 input_shape=self.input_shape))
             temp_model.add(Dense(self.num_features, use_bias=False, trainable=False))
             temp_model.compile('adam', 'mse', metrics=['mse'])
             temp_model.fit(self.x_tr, self.x_tr, epochs=10, batch_size=32)
@@ -73,7 +75,7 @@ class ELM:
             h = np.mat(hidden_layer_only_model.predict(self.x_tr))
         else:
             h = np.mat(self.model.predict(self.x_tr))
-
+        print('First weight matrix with shape: \n' + str(self.model.get_layer(self.hidden_layer_name).get_weights()))
         print('Created h with shape: ' + str(h.shape) + '\n And values: \n' + str(h))
         return h
 
@@ -85,6 +87,7 @@ class ELM:
         self.model.add(Dense(self.num_features, use_bias=False, weights=[beta]))
         print('Finished training ELM, model summary:')
         self.model.summary()
+        print('Beta: \n' + str(beta))
 
     def predict(self):
         last_day_in_data = np.array([self.y_te[0]])
