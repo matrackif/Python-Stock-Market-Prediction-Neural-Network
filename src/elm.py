@@ -36,6 +36,7 @@ class ELM:
         df_train, df_test = df[self.test_set_size:], df[:self.test_set_size]
         print('Dimensions of training data frame (row x col)' + str(df_train.shape))
         print('Dimensions of test data frame (row x col)' + str(df_test.shape))
+
         self.x_tr = df_train[['open', 'high', 'low', 'close']]
         self.x_te = df_test[['open', 'high', 'low', 'close']]
         self.y_tr = df_train[['open', 'high', 'low', 'close']]
