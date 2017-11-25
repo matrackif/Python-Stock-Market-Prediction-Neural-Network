@@ -7,8 +7,8 @@ if __name__ == '__main__':
     elm = ELM()
     reg_model.train()
     elm.train()
-    real_train = elm.x_tr
-    real_test = elm.x_te
+    real_train = elm.y_tr
+    real_test = elm.y_te
     elm_train_pred, elm_test_pred = elm.predict()
     reg_train_pred, reg_test_pred = reg_model.predict()
     index_of_plotted_feature = elm.index_of_plotted_feature
