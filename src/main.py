@@ -1,10 +1,10 @@
 import matplotlib.pyplot as plt
-from src.elm import ELM
+from src.elm import ELMMatrixVersion
 from src.regular_model import RegularModel
 
 if __name__ == '__main__':
     reg_model = RegularModel()
-    elm = ELM()
+    elm = ELMMatrixVersion()
     reg_model.train()
     elm.train()
     real_train = elm.y_tr
