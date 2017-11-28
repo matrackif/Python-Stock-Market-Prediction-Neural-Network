@@ -3,6 +3,7 @@ from pandas import DataFrame
 from pandas import to_datetime
 import matplotlib
 import datetime
+import numpy as np
 
 
 # See this link for more details on this function:
@@ -66,3 +67,8 @@ def from_timestamp_to_unix_time(timestamp: str) -> int:
 
 def from_unix_time_to_timestamp(time: int) -> str:
     return str(datetime.datetime.utcfromtimestamp(time))
+
+
+def rand_init(shape, dtype=None):
+    epsilon = 0.12
+    return (np.random.random_sample(shape) * 2 * epsilon) - epsilon
