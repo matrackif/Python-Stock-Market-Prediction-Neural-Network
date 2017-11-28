@@ -14,56 +14,14 @@ from sklearn.metrics import mean_squared_error
 from keras.models import Sequential
 from keras.layers import Dense
 from keras.layers import LSTM
-
-
-# See this link for more details on this function:
-# https://machinelearningmastery.com/convert-time-series-supervised-learning-problem-python/
-def series_to_supervised(data, n_in=1, n_out=1, dropnan=True):
-    """
-    Frame a time series as a supervised learning dataset.
-    Arguments:
-        data: Sequence of observations as a list or NumPy array.
-        n_in: Number of lag observations as input (X).
-        n_out: Number of observations as output (y).
-        dropnan: Boolean whether or not to drop rows with NaN values.
-        In other words n_in is how many days before we shall predict, n_out is how many days ahead
-    Returns:
-        Pandas DataFrame of series framed for supervised learning.
-    """
-
-    n_vars = 1 if type(data) is list else data.shape[1]
-    df = DataFrame(data)
-    cols, names = list(), list()
-    # input sequence (t-n, ... t-1)
-    for i in range(n_in, 0, -1):
-        cols.append(df.shift(-i))
-        names += [('var%d(t-%d)' % (j + 1, i)) for j in range(n_vars)]
-    # forecast sequence (t, t+1, ... t+n)
-    for i in range(0, n_out):
-        cols.append(df.shift(i))
-        if i == 0:
-            names += [('var%d(t)' % (j + 1)) for j in range(n_vars)]
-        else:
-            names += [('var%d(t+%d)' % (j + 1, i)) for j in range(n_vars)]
-    # put it all together
-    agg = concat(cols, axis=1)
-    agg.columns = names
-    # drop rows with NaN values
-    if dropnan:
-        agg.dropna(inplace=True)
-    return agg
-
-
-def convert_to_matplot_dates(dates_dataframe):
-    datetimes = to_datetime(dates_dataframe.values)
-    list_datetimes = datetimes.to_pydatetime().tolist()
-    return dates.date2num(list_datetimes)
+import src.utils as utils
 
 
 class LSTMPredictor:
-    def __init__(self, csv_file: str='../data/lstm_dates.csv'):
-        self.dataset = read_csv(csv_file, header=0, index_col=0)
-        values = self.dataset.values
+    def __init__(self, csv_file: str='../data/daily_MSFT.csv'):
+        self.dataset = read_csv(csv_file, header=0)
+        print('CSV columns: ' + str(self.dataset.columns.tolist()))
+        values = self.dataset[['open', 'high', 'low', 'close', 'volume']].values
         values = values.astype('float32')
         self.num_of_prev_timesteps = 7
         self.num_of_future_timesteps = 2
@@ -79,7 +37,7 @@ class LSTMPredictor:
         self.scaled = self.scaler.fit_transform(values)
 
         # frame as supervised learning
-        self.reframed = series_to_supervised(self.scaled, self.num_of_prev_timesteps, self.num_of_future_timesteps)
+        self.reframed = utils.series_to_supervised(self.scaled, self.num_of_prev_timesteps, self.num_of_future_timesteps)
 
         print('reframed: \n' + str(self.reframed.head()))
         self.scaled_values = self.reframed.values  # Extract numpy array from a pandas DataFrame
@@ -199,7 +157,7 @@ if __name__ == '__main__':
         mean_squared_error(inv_y_test[:, index_of_plotted_feature], inv_y_pred_test[:, index_of_plotted_feature]))
     print('Test RMSE (for ' + plotted_feature_str + ') is: %.3f' % rmse)
 
-    matplot_dates = convert_to_matplot_dates(lstm_predictor.dataset.reset_index()["date"])
+    matplot_dates = utils.convert_to_matplot_dates(lstm_predictor.dataset)
     print('lstm_predictor.test_set_size: \n' + str(lstm_predictor.test_set_size) + ' len of matplot_dates=' + str(len(matplot_dates)))
     matplot_test_dates = matplot_dates[:lstm_predictor.test_set_size]
     matplot_train_dates = matplot_dates[lstm_predictor.test_set_size:lstm_predictor.data_size]

@@ -14,12 +14,7 @@ from keras.layers.advanced_activations import LeakyReLU, PReLU
 from keras.losses import mean_absolute_error
 from keras.models import Model
 import keras.backend as K
-
-
-def convert_to_matplot_dates(dates_dataframe):
-    datetimes = pd.to_datetime(dates_dataframe.values.flatten(), unit='s')
-    list_datetimes = datetimes.to_pydatetime().tolist()
-    return matplotlib.dates.date2num(list_datetimes)
+import src.utils as utils
 
 
 def rand_init(shape, dtype=None):
@@ -197,7 +192,7 @@ class ELMMatrixVersion:
 
 
 class DisjointDataModel:
-    def __init__(self, csv_file: str = '../data/corrected_dates.csv', use_keras: bool = False,
+    def __init__(self, csv_file: str = '../data/daily_MSFT.csv', use_keras: bool = False,
                  index_of_plotted_feature: int = 0):
         df = pd.read_csv(csv_file)  # By default header will be read from file
         print('Head of data frame: \n' + str(df.head()))
@@ -220,8 +215,8 @@ class DisjointDataModel:
             shape=(int(self.num_of_rows_in_csv / self.num_prev_timesteps), self.num_prev_attributes))
         self.y_values = np.zeros(
             shape=(int(self.num_of_rows_in_csv / self.num_prev_timesteps), self.num_future_attributes))
-        dates_df = df[['timestamp']]
-        self.plotable_dates = convert_to_matplot_dates(dates_df)
+
+        self.plotable_dates = utils.convert_to_matplot_dates(df)
         self.plotable_dates = np.reshape(self.plotable_dates, newshape=(-1, 1)).copy()
         self.plotable_dates_list = []
         self.plotable_y_train_real = None
