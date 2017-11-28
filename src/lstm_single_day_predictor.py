@@ -17,7 +17,7 @@ from keras.layers import LSTM
 import src.utils as utils
 
 
-class LSTMPredictor:
+class LSTMSingleDayPredictor:
     def __init__(self, csv_file: str='../data/daily_MSFT.csv'):
         self.dataset = read_csv(csv_file, header=0)
         print('CSV columns: ' + str(self.dataset.columns.tolist()))
@@ -34,6 +34,7 @@ class LSTMPredictor:
 
         # normalize features
         self.scaler = MinMaxScaler(feature_range=(0, 1))
+        print('Shape of values before transforming: ' + str(values.shape))
         self.scaled = self.scaler.fit_transform(values)
 
         # frame as supervised learning
@@ -92,7 +93,9 @@ class LSTMPredictor:
         pyplot.show()
 
     def invert(self, input_y):
+        print('input_y shape: ' + str(input_y.shape) + ' len: ' + str(len(input_y)))
         input_y = input_y.reshape((len(input_y), self.num_features))
+        print('input_y shape AFTER: ' + str(input_y.shape) + ' len: ' + str(len(input_y)))
         # invert scaling and add missing columns to get back actual value
         inv_y = self.scaler.inverse_transform(input_y)
         # Because our data is in decreasing (time-wise) order we have to reverse the result
@@ -142,7 +145,7 @@ class LSTMPredictor:
 
 
 if __name__ == '__main__':
-    lstm_predictor = LSTMPredictor()
+    lstm_predictor = LSTMSingleDayPredictor()
     lstm_predictor.train()
     index_of_plotted_feature = 0
     plotted_feature_str = \
