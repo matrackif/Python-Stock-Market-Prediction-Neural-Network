@@ -19,7 +19,7 @@ import src.utils as utils
 
 class DisjointDataModel:
     def __init__(self, csv_file: str = '../data/daily_MSFT.csv', use_keras: bool = False,
-                 index_of_plotted_feature: int = 0):
+                 index_of_plotted_feature: int = 0, num_of_previous_days: int = 7, num_of_future_days: int = 3):
         df = pd.read_csv(csv_file)  # By default header will be read from file
         print('Head of data frame: \n' + str(df.head()))
         print('Dimensions of data frame (row x col)' + str(df.shape))
@@ -32,8 +32,8 @@ class DisjointDataModel:
         self.num_of_rows_in_csv = int(df.shape[0])
         self.num_features = 4
         self.num_hidden_layer_neurons = 512
-        self.num_prev_timesteps = 6
-        self.num_future_timesteps = 2
+        self.num_prev_timesteps = num_of_previous_days
+        self.num_future_timesteps = num_of_future_days
         self.num_prev_attributes = self.num_prev_timesteps * self.num_features
         self.num_future_attributes = self.num_future_timesteps * self.num_features
         self.df_values = df[['open', 'high', 'low', 'close']].values
@@ -135,7 +135,7 @@ class DisjointDataModel:
         # Our model is trained to predict the stock prices at t+n, t+n-1, ..., t given the prices at t-1, t-2, ..., t-k
         # Where n is num_future_timesteps and k is num_prev_timesteps
         if self.use_keras:
-            self.model.fit(self.x_tr, self.y_tr, epochs=40, batch_size=16, validation_data=(self.x_te, self.y_te))
+            self.model.fit(self.x_tr, self.y_tr, epochs=50, batch_size=16, validation_data=(self.x_te, self.y_te))
         else:
             H = self.create_h()
             T = self.y_tr

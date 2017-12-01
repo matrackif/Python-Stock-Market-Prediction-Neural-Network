@@ -19,18 +19,19 @@ import src.utils as utils
 
 
 class LSTMSequencePredictor:
-    def __init__(self, csv_file: str='../data/daily_MSFT.csv'):
+    def __init__(self, csv_file: str = '../data/daily_MSFT.csv', index_of_plotted_feature: int = 0,
+                 num_of_previous_days: int = 7, num_of_future_days: int = 3):
         self.dataset = read_csv(csv_file, header=0)
         print('CSV columns: ' + str(self.dataset.columns.tolist()))
         values = self.dataset[['open', 'high', 'low', 'close', 'volume']].values
         values = values.astype('float32')
-        self.num_of_prev_timesteps = 7
-        self.num_of_future_timesteps = 2
+        self.num_of_prev_timesteps = num_of_previous_days
+        self.num_of_future_timesteps = num_of_future_days
         self.num_features = 5
         self.num_prev_objs = self.num_features * self.num_of_prev_timesteps
         self.num_future_objs = self.num_features * self.num_of_future_timesteps
         # open = 0, high = 1, low = 2, close = 3, volume = 4
-        self.index_of_plotted_feature = 0  # The feature that shall be plotted (all will be predicted)
+        self.index_of_plotted_feature = index_of_plotted_feature  # The feature that shall be plotted (all will be predicted)
         self.plotted_feature_str = \
             {0: 'Open', 1: 'High', 2: 'Low', 3: 'Close', 4: 'Volume'}[self.index_of_plotted_feature]
         print('Model will plot: ' + self.plotted_feature_str)
@@ -43,9 +44,10 @@ class LSTMSequencePredictor:
         self.scaled = self.scaler.fit_transform(values)
 
         # frame as supervised learning
-        self.reframed = utils.series_to_supervised(self.scaled, self.num_of_prev_timesteps, self.num_of_future_timesteps)
-        reframed_unscaled = utils.series_to_supervised(self.unscaled_values, self.num_of_prev_timesteps,
+        self.reframed = utils.series_to_supervised(self.scaled, self.num_of_prev_timesteps,
                                                    self.num_of_future_timesteps)
+        reframed_unscaled = utils.series_to_supervised(self.unscaled_values, self.num_of_prev_timesteps,
+                                                       self.num_of_future_timesteps)
         self.unscaled_values = reframed_unscaled.values
         self.plotable_dates = utils.convert_to_matplot_dates(self.dataset)
         self.plotable_dates = np.reshape(self.plotable_dates, newshape=(-1, 1)).copy()
@@ -53,7 +55,7 @@ class LSTMSequencePredictor:
                                                          self.num_of_future_timesteps)
         print('self.reframed_dates: \n' + str(self.reframed_dates.head()))
         print('reframed: \n' + str(self.reframed.head()))
-        self.scaled_values = self.reframed.values # Extract numpy array from a pandas DataFrame
+        self.scaled_values = self.reframed.values  # Extract numpy array from a pandas DataFrame
 
         self.plotable_y_train_real = None
         self.plotable_y_train_pred = None
@@ -83,10 +85,14 @@ class LSTMSequencePredictor:
 
         self.unscaled_train_x_y = self.unscaled_values[self.test_set_size:, :]
         self.unscaled_test_x_y = self.unscaled_values[:self.test_set_size, :]
-        unscaled_train_y, unscaled_test_y = self.unscaled_train_x_y[:, -self.num_future_objs:], self.unscaled_test_x_y[:, -self.num_future_objs:]
+        unscaled_train_y, unscaled_test_y = self.unscaled_train_x_y[:, -self.num_future_objs:], self.unscaled_test_x_y[
+                                                                                                :,
+                                                                                                -self.num_future_objs:]
 
-        self.train_x, self.train_y = self.training_set_x_y[:, :self.num_prev_objs], self.training_set_x_y[:, -self.num_future_objs:]
-        self.test_x, self.test_y = self.test_set_x_y[:, :self.num_prev_objs], self.test_set_x_y[:,  -self.num_future_objs:]
+        self.train_x, self.train_y = self.training_set_x_y[:, :self.num_prev_objs], self.training_set_x_y[:,
+                                                                                    -self.num_future_objs:]
+        self.test_x, self.test_y = self.test_set_x_y[:, :self.num_prev_objs], self.test_set_x_y[:,
+                                                                              -self.num_future_objs:]
 
         self.plotable_y_train_real = unscaled_train_y[:, -(self.num_features + self.index_of_plotted_feature)].flatten()
         self.plotable_y_test_real = unscaled_test_y[:, -(self.num_features + self.index_of_plotted_feature)].flatten()
@@ -112,7 +118,7 @@ class LSTMSequencePredictor:
 
     def train(self):
         # fit network
-        history = self.model.fit(self.train_x, self.train_y, epochs=10,
+        history = self.model.fit(self.train_x, self.train_y, epochs=50,
                                  batch_size=64, validation_data=(self.test_x, self.test_y),
                                  verbose=2, shuffle=False)
         # plot history
@@ -145,13 +151,14 @@ class LSTMSequencePredictor:
         # inv_pred_y = inv_pred_y[::-1]
         return inv_pred_y
 
-    def predict_all_and_plot(self,  do_plot: bool = True):
+    def predict_all_and_plot(self, do_plot: bool = True):
         # Make prediction for future given last N observations
         inv_y_train = self.invert(input_y=self.train_y)
         inv_y_test = self.invert(input_y=self.test_y)
         inv_y_pred_train = self.make_pred_and_invert(input_x=self.train_x)
         inv_y_pred_test = self.make_pred_and_invert(input_x=self.test_x)
-        inv_y_future_pred = self.make_pred_and_invert(input_x=self.last_observations_reshaped, is_predicting_real_future=True)
+        inv_y_future_pred = self.make_pred_and_invert(input_x=self.last_observations_reshaped,
+                                                      is_predicting_real_future=True)
         print('inv_y_future_pred: \n' + str(inv_y_future_pred) + ' shape: ' + str(inv_y_future_pred.shape))
         self.plotable_y_train_pred = inv_y_pred_train[:,
                                      -(self.num_features + self.index_of_plotted_feature)].flatten()

@@ -18,7 +18,7 @@ import src.utils as utils
 
 
 class LSTMSingleDayPredictor:
-    def __init__(self, csv_file: str='../data/daily_MSFT.csv'):
+    def __init__(self, csv_file: str = '../data/daily_MSFT.csv'):
         self.dataset = read_csv(csv_file, header=0)
         print('CSV columns: ' + str(self.dataset.columns.tolist()))
         values = self.dataset[['open', 'high', 'low', 'close', 'volume']].values
@@ -38,7 +38,8 @@ class LSTMSingleDayPredictor:
         self.scaled = self.scaler.fit_transform(values)
 
         # frame as supervised learning
-        self.reframed = utils.series_to_supervised(self.scaled, self.num_of_prev_timesteps, self.num_of_future_timesteps)
+        self.reframed = utils.series_to_supervised(self.scaled, self.num_of_prev_timesteps,
+                                                   self.num_of_future_timesteps)
 
         print('reframed: \n' + str(self.reframed.head()))
         self.scaled_values = self.reframed.values  # Extract numpy array from a pandas DataFrame
@@ -59,12 +60,14 @@ class LSTMSingleDayPredictor:
         self.test_set_x_y = self.scaled_values[:self.test_set_size, :]
         print(self.dataset.head())
 
-        self.train_x, self.train_y = self.training_set_x_y[:, :self.num_prev_objs], self.training_set_x_y[:, -self.num_features:]
+        self.train_x, self.train_y = self.training_set_x_y[:, :self.num_prev_objs], self.training_set_x_y[:,
+                                                                                    -self.num_features:]
         self.test_x, self.test_y = self.test_set_x_y[:, :self.num_prev_objs], self.test_set_x_y[:, -self.num_features:]
         # reshape input to be 3D [samples, timesteps, features] as expected by LSTM
         self.train_x = self.train_x.reshape(self.train_x.shape[0], self.num_of_prev_timesteps, self.num_features)
         self.test_x = self.test_x.reshape(self.test_x.shape[0], self.num_of_prev_timesteps, self.num_features)
-        self.last_observations_reshaped = self.last_observations.reshape(self.last_observations.shape[0], self.num_of_prev_timesteps,
+        self.last_observations_reshaped = self.last_observations.reshape(self.last_observations.shape[0],
+                                                                         self.num_of_prev_timesteps,
                                                                          self.num_features)
 
         print('Training input size: ' + str(self.train_x.shape) + '\n'
@@ -161,7 +164,8 @@ if __name__ == '__main__':
     print('Test RMSE (for ' + plotted_feature_str + ') is: %.3f' % rmse)
 
     matplot_dates = utils.convert_to_matplot_dates(lstm_predictor.dataset)
-    print('lstm_predictor.test_set_size: \n' + str(lstm_predictor.test_set_size) + ' len of matplot_dates=' + str(len(matplot_dates)))
+    print('lstm_predictor.test_set_size: \n' + str(lstm_predictor.test_set_size) + ' len of matplot_dates=' + str(
+        len(matplot_dates)))
     matplot_test_dates = matplot_dates[:lstm_predictor.test_set_size]
     matplot_train_dates = matplot_dates[lstm_predictor.test_set_size:lstm_predictor.data_size]
     # Reverse dates because they are in decreasing order
@@ -173,7 +177,7 @@ if __name__ == '__main__':
     train_data_graph, = pyplot.plot_date(matplot_train_dates, inv_y_pred_train[:, index_of_plotted_feature], 'b-',
                                          label='Training data', color="red")
     train_prediction_graph, = pyplot.plot_date(matplot_train_dates, inv_y_train[:, index_of_plotted_feature], 'b-',
-                                              label='Prediction', color="blue")
+                                               label='Prediction', color="blue")
     pyplot.xlabel('Date')
     pyplot.ylabel(plotted_feature_str)
     pyplot.title('Prediction of ' + plotted_feature_str + ' vs. Training data')
