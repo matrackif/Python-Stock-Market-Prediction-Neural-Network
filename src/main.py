@@ -34,6 +34,45 @@ if __name__ == '__main__':
     rolling_window_model_elm.predict_and_plot(do_plot=False)
 
     plt.figure(0)
+    real_training_data, = plt.plot_date(rolling_window_model.train_dates,
+                                        rolling_window_model.plotable_y_train_real, 'b-',
+                                        label='Real training data', color='pink')
+    rolling_window_model_train_pred, = plt.plot_date(rolling_window_model.train_dates,
+                                                     rolling_window_model.plotable_y_train_pred, 'b-',
+                                                     label='Keras rolling window train prediction', color='blue')
+    lstm_train_pred, = plt.plot_date(lstm.train_dates,
+                                     lstm.plotable_y_train_pred, 'b-',
+                                     label='Keras LSTM train prediction', color='orange')
+    rolling_window_model_elm_train_pred, = plt.plot_date(rolling_window_model_elm.train_dates,
+                                                     rolling_window_model_elm.plotable_y_train_pred, 'b-',
+                                                     label='ELM rolling window train prediction', color='green')
+    plt.xlabel('Date')
+    plt.ylabel('Prediction of ' + plotted_feature_str)
+    plt.legend(
+        handles=[real_training_data, rolling_window_model_train_pred, lstm_train_pred, rolling_window_model_elm_train_pred])
+    plt.show()
+
+    plt.figure(1)
+    real_test_data, = plt.plot_date(rolling_window_model.test_dates,
+                                        rolling_window_model.plotable_y_test_real, 'b-',
+                                        label='Real test data', color='pink')
+    rolling_window_model_test_pred, = plt.plot_date(rolling_window_model.test_dates,
+                                                     rolling_window_model.plotable_y_test_pred, 'b-',
+                                                     label='Keras rolling window test prediction', color='blue')
+    lstm_test_pred, = plt.plot_date(lstm.test_dates,
+                                     lstm.plotable_y_test_pred, 'b-',
+                                     label='Keras LSTM test prediction', color='orange')
+    rolling_window_model_elm_test_pred, = plt.plot_date(rolling_window_model_elm.test_dates,
+                                                         rolling_window_model_elm.plotable_y_test_pred, 'b-',
+                                                         label='ELM rolling window test prediction', color='green')
+    plt.xlabel('Date')
+    plt.ylabel('Prediction of ' + plotted_feature_str)
+    plt.legend(
+        handles=[real_test_data, rolling_window_model_test_pred, lstm_test_pred,
+                 rolling_window_model_elm_test_pred])
+    plt.show()
+
+    plt.figure(2)
     future_disjoint_data_model, = plt.plot(range(1, len(disjoint_data_model.plotable_y_future_pred) + 1),
                                            disjoint_data_model.plotable_y_future_pred, 'b-',
                                            label='Keras disjoint data future prediction', color='red')
