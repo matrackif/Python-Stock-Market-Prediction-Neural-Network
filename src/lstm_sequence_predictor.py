@@ -20,7 +20,7 @@ import src.utils as utils
 
 class LSTMSequencePredictor:
     def __init__(self, csv_file: str = '../data/daily_MSFT.csv', index_of_plotted_feature: int = 0,
-                 num_of_previous_days: int = 7, num_of_future_days: int = 3):
+                 num_of_previous_days: int = 7, num_of_future_days: int = 3, num_of_hidden_neurons: int = 256):
         self.dataset = read_csv(csv_file, header=0)
         print('CSV columns: ' + str(self.dataset.columns.tolist()))
         values = self.dataset[['open', 'high', 'low', 'close', 'volume']].values
@@ -111,7 +111,7 @@ class LSTMSequencePredictor:
 
         # Create LSTM model
         self.model = Sequential()
-        self.model.add(LSTM(512, input_shape=(self.train_x.shape[1], self.train_x.shape[2])))
+        self.model.add(LSTM(num_of_hidden_neurons, input_shape=(self.train_x.shape[1], self.train_x.shape[2])))
         self.model.add(Dense(self.num_future_objs))
         self.model.compile(loss='mae', optimizer='adam')
         self.model.summary()

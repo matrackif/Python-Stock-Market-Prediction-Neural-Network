@@ -3,10 +3,9 @@ from src.disjoint_data_model import DisjointDataModel
 from src.rolling_window_model import RollingWindowModel
 from src.lstm_sequence_predictor import LSTMSequencePredictor
 
-if __name__ == '__main__':
-    index_of_plotted_data = 0
-    num_previous_days = 10
-    num_future_days = 5
+
+def train_and_predict(index_of_plotted_data: int = 0, num_previous_days:int = 10, num_future_days:int = 5, num_hidden_neurons:int = 512):
+
     plotted_feature_str = {0: 'Open', 1: 'High', 2: 'Low', 3: 'Close', 4: 'Volume'}[index_of_plotted_data]
     disjoint_data_model = DisjointDataModel(use_keras=True, index_of_plotted_feature=index_of_plotted_data,
                                             num_of_previous_days=num_previous_days, num_of_future_days=num_future_days)
@@ -94,3 +93,6 @@ if __name__ == '__main__':
         handles=[future_disjoint_data_model, future_disjoint_data_model_elm, future_rolling_window_model, future_lstm,
                  future_rolling_window_model_elm])
     plt.show()
+
+if __name__ == '__main__':
+    train_and_predict()

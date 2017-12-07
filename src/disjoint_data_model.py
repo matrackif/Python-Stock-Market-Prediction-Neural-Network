@@ -19,7 +19,7 @@ import src.utils as utils
 
 class DisjointDataModel:
     def __init__(self, csv_file: str = '../data/daily_MSFT.csv', use_keras: bool = False,
-                 index_of_plotted_feature: int = 0, num_of_previous_days: int = 7, num_of_future_days: int = 3):
+                 index_of_plotted_feature: int = 0, num_of_previous_days: int = 7, num_of_future_days: int = 3, num_of_hidden_neurons: int = 256):
         df = pd.read_csv(csv_file)  # By default header will be read from file
         print('Head of data frame: \n' + str(df.head()))
         print('Dimensions of data frame (row x col)' + str(df.shape))
@@ -31,7 +31,7 @@ class DisjointDataModel:
         self.model_type_str = None
         self.num_of_rows_in_csv = int(df.shape[0])
         self.num_features = 4
-        self.num_hidden_layer_neurons = 512
+        self.num_hidden_layer_neurons = num_of_hidden_neurons
         self.num_prev_timesteps = num_of_previous_days
         self.num_future_timesteps = num_of_future_days
         self.num_prev_attributes = self.num_prev_timesteps * self.num_features
