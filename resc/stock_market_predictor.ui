@@ -100,7 +100,7 @@
       </widget>
      </item>
      <item row="3" column="0">
-      <widget class="QPushButton" name="pushButton">
+      <widget class="QPushButton" name="csvButton">
        <property name="maximumSize">
         <size>
          <width>100</width>
@@ -120,8 +120,8 @@
    <widget class="QPushButton" name="trainAndPredictButton">
     <property name="geometry">
      <rect>
-      <x>350</x>
-      <y>310</y>
+      <x>320</x>
+      <y>520</y>
       <width>141</width>
       <height>23</height>
      </rect>
@@ -176,7 +176,30 @@
      <string/>
     </property>
     <property name="pixmap">
-     <pixmap>../resc/mini_logo.PNG</pixmap>
+     <pixmap resource="mini_logo_resource.qrc">:/Image/mini_logo.PNG</pixmap>
+    </property>
+   </widget>
+   <widget class="QTextEdit" name="stdOutputTextEdit">
+    <property name="geometry">
+     <rect>
+      <x>30</x>
+      <y>300</y>
+      <width>721</width>
+      <height>211</height>
+     </rect>
+    </property>
+   </widget>
+   <widget class="QLabel" name="stdOutputLabel">
+    <property name="geometry">
+     <rect>
+      <x>340</x>
+      <y>270</y>
+      <width>91</width>
+      <height>16</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string>Standard Output</string>
     </property>
    </widget>
   </widget>
@@ -192,6 +215,8 @@
   </widget>
   <widget class="QStatusBar" name="statusbar"/>
  </widget>
- <resources/>
+ <resources>
+  <include location="mini_logo_resource.qrc"/>
+ </resources>
  <connections/>
 </ui>

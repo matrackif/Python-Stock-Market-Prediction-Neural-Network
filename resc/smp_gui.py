@@ -7,6 +7,12 @@
 # WARNING! All changes made in this file will be lost!
 
 from PyQt5 import QtCore, QtGui, QtWidgets
+import inspect
+import os
+currentdir = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))
+parentdir = os.path.dirname(currentdir)
+print('parentdir: ' + parentdir)
+os.sys.path.insert(0, parentdir + '/resc')
 
 class Ui_SMPMainWindow(object):
     def setupUi(self, SMPMainWindow):
@@ -49,15 +55,15 @@ class Ui_SMPMainWindow(object):
         self.numHiddenNeuronsLabel = QtWidgets.QLabel(self.formLayoutWidget)
         self.numHiddenNeuronsLabel.setObjectName("numHiddenNeuronsLabel")
         self.formLayout.setWidget(2, QtWidgets.QFormLayout.LabelRole, self.numHiddenNeuronsLabel)
-        self.pushButton = QtWidgets.QPushButton(self.formLayoutWidget)
-        self.pushButton.setMaximumSize(QtCore.QSize(100, 16777215))
-        self.pushButton.setObjectName("pushButton")
-        self.formLayout.setWidget(3, QtWidgets.QFormLayout.LabelRole, self.pushButton)
+        self.csvButton = QtWidgets.QPushButton(self.formLayoutWidget)
+        self.csvButton.setMaximumSize(QtCore.QSize(100, 16777215))
+        self.csvButton.setObjectName("csvButton")
+        self.formLayout.setWidget(3, QtWidgets.QFormLayout.LabelRole, self.csvButton)
         self.csvPathEdit = QtWidgets.QLineEdit(self.formLayoutWidget)
         self.csvPathEdit.setObjectName("csvPathEdit")
         self.formLayout.setWidget(3, QtWidgets.QFormLayout.FieldRole, self.csvPathEdit)
         self.trainAndPredictButton = QtWidgets.QPushButton(self.centralwidget)
-        self.trainAndPredictButton.setGeometry(QtCore.QRect(350, 310, 141, 23))
+        self.trainAndPredictButton.setGeometry(QtCore.QRect(320, 520, 141, 23))
         self.trainAndPredictButton.setObjectName("trainAndPredictButton")
         self.verticalLayoutWidget = QtWidgets.QWidget(self.centralwidget)
         self.verticalLayoutWidget.setGeometry(QtCore.QRect(620, 120, 111, 80))
@@ -77,8 +83,14 @@ class Ui_SMPMainWindow(object):
         self.miniLogoLabel = QtWidgets.QLabel(self.centralwidget)
         self.miniLogoLabel.setGeometry(QtCore.QRect(620, 20, 101, 101))
         self.miniLogoLabel.setText("")
-        self.miniLogoLabel.setPixmap(QtGui.QPixmap("../resc/mini_logo.PNG"))
+        self.miniLogoLabel.setPixmap(QtGui.QPixmap(":/Image/mini_logo.PNG"))
         self.miniLogoLabel.setObjectName("miniLogoLabel")
+        self.stdOutputTextEdit = QtWidgets.QTextEdit(self.centralwidget)
+        self.stdOutputTextEdit.setGeometry(QtCore.QRect(30, 300, 721, 211))
+        self.stdOutputTextEdit.setObjectName("stdOutputTextEdit")
+        self.stdOutputLabel = QtWidgets.QLabel(self.centralwidget)
+        self.stdOutputLabel.setGeometry(QtCore.QRect(340, 270, 91, 16))
+        self.stdOutputLabel.setObjectName("stdOutputLabel")
         SMPMainWindow.setCentralWidget(self.centralwidget)
         self.menubar = QtWidgets.QMenuBar(SMPMainWindow)
         self.menubar.setGeometry(QtCore.QRect(0, 0, 800, 21))
@@ -103,12 +115,14 @@ class Ui_SMPMainWindow(object):
         self.numFutureDaysEdit.setText(_translate("SMPMainWindow", "4"))
         self.numHiddenNeuronsEdit.setText(_translate("SMPMainWindow", "256"))
         self.numHiddenNeuronsLabel.setText(_translate("SMPMainWindow", "Number of hidden Neurons"))
-        self.pushButton.setText(_translate("SMPMainWindow", "Select CSV"))
+        self.csvButton.setText(_translate("SMPMainWindow", "Select CSV"))
         self.trainAndPredictButton.setText(_translate("SMPMainWindow", "Train And Predict"))
         self.filipLabel.setText(_translate("SMPMainWindow", "Filip Matracki"))
         self.mateuszLabel.setText(_translate("SMPMainWindow", "Mateusz Grossman"))
         self.fardinLabel.setText(_translate("SMPMainWindow", "Fardin Mohammad"))
+        self.stdOutputLabel.setText(_translate("SMPMainWindow", "Standard Output"))
 
+import mini_logo_resource_rc
 
 if __name__ == "__main__":
     import sys

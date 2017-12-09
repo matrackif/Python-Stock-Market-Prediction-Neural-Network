@@ -3,7 +3,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import datetime
 import matplotlib
-import src.csv_parser as CsvParser
+import csv_parser as CsvParser
 from sklearn.preprocessing import StandardScaler
 import keras
 from keras.models import Sequential
@@ -14,12 +14,13 @@ from keras.layers.advanced_activations import LeakyReLU, PReLU
 from keras.losses import mean_absolute_error
 from keras.models import Model
 import keras.backend as K
-import src.utils as utils
+import utils as utils
 
 
 class RollingWindowModel:
     def __init__(self, csv_file: str = '../data/daily_MSFT.csv', use_keras: bool = False,
-                 index_of_plotted_feature: int = 0, num_of_previous_days: int = 7, num_of_future_days: int = 3, num_of_hidden_neurons: int = 256):
+                 index_of_plotted_feature: int = 0, num_of_previous_days: int = 7, num_of_future_days: int = 3,
+                 num_of_hidden_neurons: int = 256):
         df = pd.read_csv(csv_file)  # By default header will be read from file
         print('Head of data frame: \n' + str(df.head()))
         print('Dimensions of data frame (row x col)' + str(df.shape))
@@ -123,7 +124,8 @@ class RollingWindowModel:
         # Our model is trained to predict the stock prices at t, t+1, ..., t+n given the prices at t-k, t-k+1, ..., t-1
         # Where n is num_future_timesteps and k is num_prev_timesteps
         if self.use_keras:
-            self.model.fit(self.x_tr, self.y_tr, epochs=50, batch_size=16, validation_data=(self.x_te, self.y_te))
+            self.model.fit(self.x_tr, self.y_tr, epochs=50, batch_size=16, validation_data=(self.x_te, self.y_te),
+                           verbose=2)
         else:
             H = self.create_h()
             T = self.y_tr

@@ -15,7 +15,7 @@ from keras.models import Sequential
 from keras.layers import Dense
 from keras.layers import LSTM
 from matplotlib import pyplot as plt
-import src.utils as utils
+import utils as utils
 
 
 class LSTMSequencePredictor:
@@ -116,17 +116,18 @@ class LSTMSequencePredictor:
         self.model.compile(loss='mae', optimizer='adam')
         self.model.summary()
 
-    def train(self):
+    def train(self, plot_history: bool = True):
         # fit network
-        history = self.model.fit(self.train_x, self.train_y, epochs=50,
+        history = self.model.fit(self.train_x, self.train_y, epochs=15,
                                  batch_size=64, validation_data=(self.test_x, self.test_y),
                                  verbose=2, shuffle=False)
         # plot history
-        pyplot.figure(0)
-        pyplot.plot(history.history['loss'], label='Training loss (error)')
-        pyplot.plot(history.history['val_loss'], label='Test loss (error)')
-        pyplot.legend()
-        pyplot.show()
+        if plot_history:
+            pyplot.figure(0)
+            pyplot.plot(history.history['loss'], label='Training loss (error)')
+            pyplot.plot(history.history['val_loss'], label='Test loss (error)')
+            pyplot.legend()
+            pyplot.show()
 
     def invert(self, input_y):
         input_y = input_y[:, -self.num_features:]
