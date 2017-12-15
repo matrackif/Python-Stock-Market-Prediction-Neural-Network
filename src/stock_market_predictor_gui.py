@@ -2,6 +2,7 @@ import sys
 import os
 from main import train_and_predict
 import inspect
+
 currentdir = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))
 parentdir = os.path.dirname(currentdir)
 print('parentdir: ' + parentdir)
@@ -31,11 +32,18 @@ class StockMarketPredictorMainWindow(QMainWindow):
         num_future_days = self.ui.numFutureDaysEdit.text()
         num_hidden_neurons = self.ui.numHiddenNeuronsEdit.text()
         csv_file_path = self.ui.csvPathEdit.text()
-
+        use_keras = str(self.ui.useKerasCheckBox.isChecked())
+        bias = self.ui.biasLineEdit.text()
+        train_percentage = self.ui.trainingPercentageEdit.text()
+        plotted_feature = self.ui.plottedFeatureComboBox.currentText()
         print('num_prev_days: ' + num_prev_days)
         print('num_future_days: ' + num_future_days)
         print('num_hidden_neurons: ' + num_hidden_neurons)
         print('csv_file_path: ' + csv_file_path)
+        print('bias: ' + bias)
+        print('train_percentage: ' + train_percentage)
+        print('plotted_feature: ' + plotted_feature)
+        print('use_keras: ' + use_keras)
         python_interpreter = 'py -3 '
         program_name = ' main.py '
         # TODO add plotted feature arg
@@ -43,7 +51,11 @@ class StockMarketPredictorMainWindow(QMainWindow):
                        + '-hc ' + num_hidden_neurons \
                        + ' -pd ' + num_prev_days \
                        + ' -fd ' + num_future_days \
-                       + ' -f ' + '\"' + csv_file_path + '\"'
+                       + ' -f ' + '\"' + csv_file_path + '\"' \
+                       + ' -trp ' + train_percentage \
+                       + ' -b ' + bias \
+                       + ' -k ' + use_keras \
+                       + ' -plot ' + plotted_feature
         print('About to execute command: ' + self.command)
         self.predicting_process.start(self.command)
 

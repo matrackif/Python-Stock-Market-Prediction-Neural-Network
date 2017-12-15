@@ -20,14 +20,14 @@ import utils as utils
 class RollingWindowModel:
     def __init__(self, csv_file: str = '../data/daily_MSFT.csv', use_keras: bool = False,
                  index_of_plotted_feature: int = 0, num_of_previous_days: int = 7, num_of_future_days: int = 3,
-                 num_of_hidden_neurons: int = 256):
+                 num_of_hidden_neurons: int = 256, train_percentage: int = 80, bias_term: int = 1):
         df = pd.read_csv(csv_file)  # By default header will be read from file
-        print('Head of data frame: \n' + str(df.head()))
-        print('Dimensions of data frame (row x col)' + str(df.shape))
+        # print('Head of data frame: \n' + str(df.head()))
+        # print('Dimensions of data frame (row x col)' + str(df.shape))
         self.index_of_plotted_feature = index_of_plotted_feature
         self.plotted_feature_str = \
             {0: 'Open', 1: 'High', 2: 'Low', 3: 'Close', 4: 'Volume'}[self.index_of_plotted_feature]
-        print('Model will plot: ' + self.plotted_feature_str)
+        self.bias = bias_term
         self.use_keras = use_keras
         self.model_type_str = None
         self.num_of_rows_in_csv = int(df.shape[0])
@@ -40,34 +40,29 @@ class RollingWindowModel:
         self.df_values = df[['open', 'high', 'low', 'close']].values
         self.reframed_x_y = utils.series_to_supervised(self.df_values, self.num_prev_timesteps,
                                                        self.num_future_timesteps)
-        print('self.reframed_x_y: \n' + str(self.reframed_x_y.head()))
         self.x_y_values = self.reframed_x_y.values
         self.plotable_dates = utils.convert_to_matplot_dates(df)
         self.plotable_dates = np.reshape(self.plotable_dates, newshape=(-1, 1)).copy()
         self.reframed_dates = utils.series_to_supervised(self.plotable_dates, self.num_prev_timesteps,
                                                          self.num_future_timesteps)
-        print('self.reframed_dates: \n' + str(self.reframed_dates.head()))
 
         self.plotable_y_train_real = None
         self.plotable_y_train_pred = None
         self.plotable_y_test_real = None
         self.plotable_y_test_pred = None
         self.plotable_y_future_pred = None
-
-        print('self.df_values shape: ' + str(self.df_values.shape))
-
         self.data_size = self.x_y_values.shape[0]
-        self.training_set_size = int(0.8 * self.data_size)
+        self.training_set_size = int((train_percentage / 100) * self.data_size)
         self.test_set_size = int(self.data_size - self.training_set_size)
-        print('Training set size: ' + str(self.training_set_size))
-        print('Test set size: ' + str(self.test_set_size))
+        print('Rolling window model: Training set size: ' + str(self.training_set_size))
+        print('Rolling window model: Test set size: ' + str(self.test_set_size))
 
         self.train_dates = self.reframed_dates.values[self.test_set_size:, -1:].flatten()
         self.test_dates = self.reframed_dates.values[:self.test_set_size, -1:].flatten()
-        print('Created train_dates with shape: ' + str(self.train_dates.shape) + '\n And values: \n' + str(
-            self.train_dates))
-        print('Created self.test_dates with shape: ' + str(self.test_dates.shape) + '\n And values: \n' + str(
-            self.test_dates))
+        # print('Created train_dates with shape: ' + str(self.train_dates.shape) + '\n And values: \n' + str(
+        #     self.train_dates))
+        # print('Created self.test_dates with shape: ' + str(self.test_dates.shape) + '\n And values: \n' + str(
+        #     self.test_dates))
         self.model = None
 
         # In our y, each row contains more than 1 time step worth of data (due to rolling window prediction)
@@ -101,23 +96,24 @@ class RollingWindowModel:
             self.plotable_y_test_real = \
                 self.y_te[:, -(self.num_features + self.index_of_plotted_feature)].flatten().tolist()[0]
             # Add bias term of ones to test X and train X
-            self.x_tr = np.concatenate((np.ones(shape=(self.x_tr.shape[0], 1)), self.x_tr), axis=1)
-            self.x_te = np.concatenate((np.ones(shape=(self.x_te.shape[0], 1)), self.x_te), axis=1)
+            self.x_tr = np.concatenate((np.ones(shape=(self.x_tr.shape[0], 1)) * self.bias, self.x_tr), axis=1)
+            self.x_te = np.concatenate((np.ones(shape=(self.x_te.shape[0], 1)) * self.bias, self.x_te), axis=1)
             # Our beta will be a weight matrix between the hidden and output layer
             self.input_layer_weights = np.mat(
                 utils.rand_init(shape=(self.num_hidden_layer_neurons, self.num_prev_attributes + 1)))
             self.beta = None
 
-        print('x_tr shape: \n' + str(self.x_tr.shape))
-        print('x_te shape: \n' + str(self.x_te.shape))
-        print('y_tr shape: \n' + str(self.y_tr.shape))
-        print('y_te shape: \n' + str(self.y_te.shape))
+        # print('x_tr shape: \n' + str(self.x_tr.shape))
+        # print('x_te shape: \n' + str(self.x_te.shape))
+        # print('y_tr shape: \n' + str(self.y_tr.shape))
+        # print('y_te shape: \n' + str(self.y_te.shape))
+        # print('y_tr: \n' + str(self.y_tr))
 
     def create_h(self):
         h = None
         if not self.use_keras:
             h = self.x_tr * self.input_layer_weights.T
-            print('Created h with shape: ' + str(h.shape) + '\n And values: \n' + str(h))
+            print('Rolling window model: created h with shape: ' + str(h.shape) + '\n And values: \n' + str(h))
         return h
 
     def train(self):
@@ -129,16 +125,16 @@ class RollingWindowModel:
         else:
             H = self.create_h()
             T = self.y_tr
-            print('Shape of T: ' + str(T.shape) + '\n And values: \n' + str(T))
+            print('Rolling window model: shape of T: ' + str(T.shape) + '\n And values: \n' + str(T))
             self.beta = np.linalg.pinv(H) * np.mat(T)
-            print('Finished training ELM')
-            print('Beta: \n' + str(self.beta))
+            print('Rolling window model: finished training ELM')
+            print('Rolling window model: Beta: \n' + str(self.beta))
 
     def predict_and_plot(self, do_plot: bool = True):
         training_pred, test_pred = None, None
         future_pred = None
         last_timeframe_in_data = np.array([self.x_y_values[0, -self.num_prev_attributes:].flatten()])
-        print('last_timeframe_in_data values:' + str(last_timeframe_in_data) + ' last_timeframe_in_data shape: '
+        print('Rolling window model: last_timeframe_in_data values:' + str(last_timeframe_in_data) + ' last_timeframe_in_data shape: '
               + str(last_timeframe_in_data.shape))
         if self.use_keras:
             training_pred = self.model.predict(self.x_tr)
@@ -199,15 +195,15 @@ class RollingWindowModel:
             plt.legend(handles=[future_graph])
             plt.show()
 
-        print('Found ' + self.model_type_str + ' prediction for training_pred, shape is: ' + str(training_pred.shape),
-              ' and type: ' + str(type(training_pred)))
-        print('Found ' + self.model_type_str + ' prediction for test_pred, shape is: ' + str(test_pred.shape),
-              ' and type: ' + str(type(test_pred)))
-        print('Found ' + self.model_type_str + ' prediction for future time frame, shape is: ' + str(future_pred.shape),
-              ' and type: ' + str(type(future_pred)))
-        print('Found ' + self.model_type_str + ' prediction for future time frame, values are: ' + str(
-            self.plotable_y_future_pred),
-              ' and len: ' + str(len(self.plotable_y_future_pred)))
+        # print('Found ' + self.model_type_str + ' prediction for training_pred, shape is: ' + str(training_pred.shape),
+        #       ' and type: ' + str(type(training_pred)))
+        # print('Found ' + self.model_type_str + ' prediction for test_pred, shape is: ' + str(test_pred.shape),
+        #       ' and type: ' + str(type(test_pred)))
+        # print('Found ' + self.model_type_str + ' prediction for future time frame, shape is: ' + str(future_pred.shape),
+        #       ' and type: ' + str(type(future_pred)))
+        # print('Found ' + self.model_type_str + ' prediction for future time frame, values are: ' + str(
+        #     self.plotable_y_future_pred),
+        #       ' and len: ' + str(len(self.plotable_y_future_pred)))
 
         return training_pred, test_pred, future_pred
 

@@ -20,9 +20,8 @@ import utils as utils
 
 class LSTMSequencePredictor:
     def __init__(self, csv_file: str = '../data/daily_MSFT.csv', index_of_plotted_feature: int = 0,
-                 num_of_previous_days: int = 7, num_of_future_days: int = 3, num_of_hidden_neurons: int = 256):
+                 num_of_previous_days: int = 7, num_of_future_days: int = 3, num_of_hidden_neurons: int = 256, train_percentage: int = 80):
         self.dataset = read_csv(csv_file, header=0)
-        print('CSV columns: ' + str(self.dataset.columns.tolist()))
         values = self.dataset[['open', 'high', 'low', 'close', 'volume']].values
         values = values.astype('float32')
         self.num_of_prev_timesteps = num_of_previous_days
@@ -34,13 +33,11 @@ class LSTMSequencePredictor:
         self.index_of_plotted_feature = index_of_plotted_feature  # The feature that shall be plotted (all will be predicted)
         self.plotted_feature_str = \
             {0: 'Open', 1: 'High', 2: 'Low', 3: 'Close', 4: 'Volume'}[self.index_of_plotted_feature]
-        print('Model will plot: ' + self.plotted_feature_str)
         self.num_rolling_days_ahead = 30
 
         self.unscaled_values = values.copy()
         # normalize features
         self.scaler = MinMaxScaler(feature_range=(0, 1))
-        print('Shape of values before transforming: ' + str(values.shape))
         self.scaled = self.scaler.fit_transform(values)
 
         # frame as supervised learning
@@ -53,8 +50,6 @@ class LSTMSequencePredictor:
         self.plotable_dates = np.reshape(self.plotable_dates, newshape=(-1, 1)).copy()
         self.reframed_dates = utils.series_to_supervised(self.plotable_dates, self.num_of_prev_timesteps,
                                                          self.num_of_future_timesteps)
-        print('self.reframed_dates: \n' + str(self.reframed_dates.head()))
-        print('reframed: \n' + str(self.reframed.head()))
         self.scaled_values = self.reframed.values  # Extract numpy array from a pandas DataFrame
 
         self.plotable_y_train_real = None
@@ -63,14 +58,12 @@ class LSTMSequencePredictor:
         self.plotable_y_test_pred = None
         self.plotable_y_future_pred = None
 
-        print('Dim of scaled_values: ' + str(self.scaled_values.shape))
         self.last_observations = self.scaled_values[0, -self.num_prev_objs:]
-        print('last_observations: \n' + str(self.last_observations))
 
         self.data_size = self.reframed.shape[0]
-        print('Data size: ' + str(self.data_size))
+
         # Training set is 80% of the examples
-        self.training_set_size = int(0.8 * self.data_size)
+        self.training_set_size = int((train_percentage / 100) * self.data_size)
         self.test_set_size = self.data_size - self.training_set_size
 
         self.train_dates = self.reframed_dates.values[self.test_set_size:, -1:].flatten()
@@ -103,7 +96,7 @@ class LSTMSequencePredictor:
         self.last_observations_reshaped = self.last_observations.reshape(1, self.num_of_prev_timesteps,
                                                                          self.num_features)
 
-        print('Training input size: ' + str(self.train_x.shape) + '\n'
+        print('LSTM Training input size: ' + str(self.train_x.shape) + '\n'
               + 'Training output size: ' + str(self.train_y.shape) + '\n'
               + 'Test input size: ' + str(self.test_x.shape) + '\n'
               + 'Test output size: ' + str(self.test_y.shape))
@@ -160,10 +153,9 @@ class LSTMSequencePredictor:
         inv_y_pred_test = self.make_pred_and_invert(input_x=self.test_x)
         inv_y_future_pred = self.make_pred_and_invert(input_x=self.last_observations_reshaped,
                                                       is_predicting_real_future=True)
-        print('inv_y_future_pred: \n' + str(inv_y_future_pred) + ' shape: ' + str(inv_y_future_pred.shape))
         self.plotable_y_train_pred = inv_y_pred_train[:,
-                                     -(self.num_features + self.index_of_plotted_feature)].flatten()
-        self.plotable_y_test_pred = inv_y_pred_test[:, -(self.num_features + self.index_of_plotted_feature)].flatten()
+                                     (-self.num_features) + self.index_of_plotted_feature].flatten()
+        self.plotable_y_test_pred = inv_y_pred_test[:, (-self.num_features) + self.index_of_plotted_feature].flatten()
         # When predicting the future we have num_future_timesteps amount of future days
         self.plotable_y_future_pred = inv_y_future_pred[:,
                                       self.index_of_plotted_feature::self.num_features].flatten()
