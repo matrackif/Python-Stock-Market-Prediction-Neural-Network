@@ -1,20 +1,10 @@
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
-import datetime
-import matplotlib
-import csv_parser as CsvParser
-from sklearn.preprocessing import StandardScaler
-import keras
 from keras.models import Sequential
-from keras.layers import Dense, BatchNormalization
-from sklearn.metrics import mean_squared_error
-from keras.activations import relu, elu
-from keras.layers.advanced_activations import LeakyReLU, PReLU
-from keras.losses import mean_absolute_error
-from keras.models import Model
-import keras.backend as K
+from keras.layers import Dense
 import utils as utils
+import time
 
 
 class DisjointDataModel:
@@ -130,29 +120,33 @@ class DisjointDataModel:
         h = None
         if not self.use_keras:
             h = self.x_tr * self.input_layer_weights.T
-            print('Disjoint data model: created h with shape: ' + str(h.shape) + '\n And values: \n' + str(h))
+            print('Disjoint data model: created h with shape: ' + str(h.shape))
+            # + '\n And values: \n' + str(h))
         return h
 
     def train(self):
         # Our model is trained to predict the stock prices at t+n, t+n-1, ..., t given the prices at t-1, t-2, ..., t-k
         # Where n is num_future_timesteps and k is num_prev_timesteps
+        start_time = time.time()
         if self.use_keras:
             self.model.fit(self.x_tr, self.y_tr, epochs=50, batch_size=16, validation_data=(self.x_te, self.y_te),
                            verbose=2)
+            print('Keras disjoint data model: finished training in %s seconds' % (time.time() - start_time))
         else:
             H = self.create_h()
             T = self.y_tr
-            print('Disjoint data model: Shape of T: ' + str(T.shape) + '\n And values: \n' + str(T))
+            print('Disjoint data model: Shape of T: ' + str(T.shape))
+            # + '\n And values: \n' + str(T))
             self.beta = np.linalg.pinv(H) * np.mat(T)
-            print('Disjoint data model: Finished training disjoint data ELM')
-            print('Disjoint data model: Beta: \n' + str(self.beta))
+            print('Disjoint data model: Finished training ELM in %s seconds' % (time.time() - start_time))
+            # print('Disjoint data model: Beta: \n' + str(self.beta))
 
     def predict_and_plot(self, do_plot: bool = True):
         training_pred, test_pred = None, None
         future_pred = None
         last_timeframe_in_data = np.array([self.df_values[0:self.num_prev_timesteps].flatten()])
-        print('Disjoint data model: last_timeframe_in_data values:' + str(last_timeframe_in_data) + ' last_timeframe_in_data shape: '
-              + str(last_timeframe_in_data.shape))
+        # print('Disjoint data model: last_timeframe_in_data values:' + str(last_timeframe_in_data) + ' last_timeframe_in_data shape: '
+        #       + str(last_timeframe_in_data.shape))
         if self.use_keras:
             training_pred = self.model.predict(self.x_tr)
             test_pred = self.model.predict(self.x_te)

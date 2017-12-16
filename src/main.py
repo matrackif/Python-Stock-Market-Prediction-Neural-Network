@@ -62,6 +62,8 @@ def train_and_predict(plotted_feature_str: str = 'Open', num_previous_days: int 
     disjoint_data_model_elm.predict_and_plot(do_plot=False)
     rolling_window_model_elm.predict_and_plot(do_plot=False)
 
+    # real_future_data = [82.4, 82.74, 83.83, 83.01, 83.31, 84.07, 84.71, 83.51, 83.6, 84.42, 81.34, 81.55, 82.54, 83.63]
+
     if use_keras:
         plt.figure(0)
         real_training_data, = plt.plot_date(rolling_window_model.train_dates,
@@ -204,5 +206,5 @@ if __name__ == '__main__':
     bias = program_args['bias']
     use_keras = program_args['use_keras']
     train_and_predict(num_hidden_neurons=num_hidden_neurons, data_source_file=csv_file_path,
-                      num_previous_days=num_prev_days, plotted_feature_str=plotted_feature,
+                      num_previous_days=num_prev_days, num_future_days=num_future_days, plotted_feature_str=plotted_feature,
                       train_percentage=train_percentage, bias_term=bias, use_keras=str2bool(use_keras))

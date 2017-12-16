@@ -1,21 +1,14 @@
 # Inspired by https://machinelearningmastery.com/multivariate-time-series-forecasting-lstms-keras/
 import numpy as np
-from math import sqrt
-from numpy import concatenate
 from matplotlib import pyplot
-from matplotlib import dates
 from pandas import read_csv
-from pandas import DataFrame
-from pandas import concat
-from pandas import to_datetime
 from sklearn.preprocessing import MinMaxScaler
-from sklearn.preprocessing import LabelEncoder
-from sklearn.metrics import mean_squared_error
 from keras.models import Sequential
 from keras.layers import Dense
 from keras.layers import LSTM
 from matplotlib import pyplot as plt
 import utils as utils
+import time
 
 
 class LSTMSequencePredictor:
@@ -75,7 +68,6 @@ class LSTMSequencePredictor:
         # Test set has the newer (time-wise) part of data
         self.test_set_x_y = self.scaled_values[:self.test_set_size, :]
         print(self.dataset.head())
-
         self.unscaled_train_x_y = self.unscaled_values[self.test_set_size:, :]
         self.unscaled_test_x_y = self.unscaled_values[:self.test_set_size, :]
         unscaled_train_y, unscaled_test_y = self.unscaled_train_x_y[:, -self.num_future_objs:], self.unscaled_test_x_y[
@@ -110,10 +102,12 @@ class LSTMSequencePredictor:
         self.model.summary()
 
     def train(self, plot_history: bool = True):
+        start_time = time.time()
         # fit network
-        history = self.model.fit(self.train_x, self.train_y, epochs=15,
+        history = self.model.fit(self.train_x, self.train_y, epochs=30,
                                  batch_size=64, validation_data=(self.test_x, self.test_y),
                                  verbose=2, shuffle=False)
+        print('Finished training Keras LSTM rolling window model in %s seconds' % (time.time() - start_time))
         # plot history
         if plot_history:
             pyplot.figure(0)
@@ -191,15 +185,15 @@ class LSTMSequencePredictor:
             plt.legend(handles=[future_graph])
             plt.show()
 
-        print('Found prediction for training_pred, shape is: ' + str(inv_y_pred_train.shape),
-              ' and type: ' + str(type(inv_y_pred_train)))
-        print('Found prediction for test_pred, shape is: ' + str(inv_y_pred_test.shape),
-              ' and type: ' + str(type(inv_y_pred_test)))
-        print('Found prediction for future time frame, shape is: ' + str(inv_y_future_pred.shape),
-              ' and type: ' + str(type(inv_y_future_pred)))
-        print('Found prediction for future time frame, values are: ' + str(
-            self.plotable_y_future_pred),
-              ' and len: ' + str(len(self.plotable_y_future_pred)))
+        # print('Found prediction for training_pred, shape is: ' + str(inv_y_pred_train.shape),
+        #       ' and type: ' + str(type(inv_y_pred_train)))
+        # print('Found prediction for test_pred, shape is: ' + str(inv_y_pred_test.shape),
+        #       ' and type: ' + str(type(inv_y_pred_test)))
+        # print('Found prediction for future time frame, shape is: ' + str(inv_y_future_pred.shape),
+        #       ' and type: ' + str(type(inv_y_future_pred)))
+        # print('Found prediction for future time frame, values are: ' + str(
+        #     self.plotable_y_future_pred),
+        #       ' and len: ' + str(len(self.plotable_y_future_pred)))
         return inv_y_train, inv_y_test, inv_y_pred_train, inv_y_pred_test, inv_y_future_pred
 
 

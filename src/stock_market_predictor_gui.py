@@ -1,12 +1,10 @@
 import sys
 import os
-from main import train_and_predict
-import inspect
-
-currentdir = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))
-parentdir = os.path.dirname(currentdir)
-print('parentdir: ' + parentdir)
-os.sys.path.insert(0, parentdir + '/resc')
+# import inspect
+# currentdir = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))
+# parentdir = os.path.dirname(currentdir)
+# print('parentdir: ' + parentdir)
+# os.sys.path.insert(0, parentdir + '/resc')
 from smp_gui import Ui_SMPMainWindow
 from PyQt5.QtCore import *
 from PyQt5.QtWidgets import *

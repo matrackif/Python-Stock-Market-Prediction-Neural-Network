@@ -1,20 +1,10 @@
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
-import datetime
-import matplotlib
-import csv_parser as CsvParser
-from sklearn.preprocessing import StandardScaler
-import keras
 from keras.models import Sequential
-from keras.layers import Dense, BatchNormalization
-from sklearn.metrics import mean_squared_error
-from keras.activations import relu, elu
-from keras.layers.advanced_activations import LeakyReLU, PReLU
-from keras.losses import mean_absolute_error
-from keras.models import Model
-import keras.backend as K
+from keras.layers import Dense
 import utils as utils
+import time
 
 
 class RollingWindowModel:
@@ -59,6 +49,7 @@ class RollingWindowModel:
 
         self.train_dates = self.reframed_dates.values[self.test_set_size:, -1:].flatten()
         self.test_dates = self.reframed_dates.values[:self.test_set_size, -1:].flatten()
+
         # print('Created train_dates with shape: ' + str(self.train_dates.shape) + '\n And values: \n' + str(
         #     self.train_dates))
         # print('Created self.test_dates with shape: ' + str(self.test_dates.shape) + '\n And values: \n' + str(
@@ -103,39 +94,42 @@ class RollingWindowModel:
                 utils.rand_init(shape=(self.num_hidden_layer_neurons, self.num_prev_attributes + 1)))
             self.beta = None
 
-        # print('x_tr shape: \n' + str(self.x_tr.shape))
-        # print('x_te shape: \n' + str(self.x_te.shape))
-        # print('y_tr shape: \n' + str(self.y_tr.shape))
-        # print('y_te shape: \n' + str(self.y_te.shape))
-        # print('y_tr: \n' + str(self.y_tr))
+            # print('x_tr shape: \n' + str(self.x_tr.shape))
+            # print('x_te shape: \n' + str(self.x_te.shape))
+            # print('y_tr shape: \n' + str(self.y_tr.shape))
+            # print('y_te shape: \n' + str(self.y_te.shape))
+            # print('y_tr: \n' + str(self.y_tr))
 
     def create_h(self):
         h = None
         if not self.use_keras:
             h = self.x_tr * self.input_layer_weights.T
-            print('Rolling window model: created h with shape: ' + str(h.shape) + '\n And values: \n' + str(h))
+            # print('Rolling window model: created h with shape: ' + str(h.shape) + '\n And values: \n' + str(h))
         return h
 
     def train(self):
         # Our model is trained to predict the stock prices at t, t+1, ..., t+n given the prices at t-k, t-k+1, ..., t-1
         # Where n is num_future_timesteps and k is num_prev_timesteps
+        start_time = time.time()
         if self.use_keras:
             self.model.fit(self.x_tr, self.y_tr, epochs=50, batch_size=16, validation_data=(self.x_te, self.y_te),
                            verbose=2)
+            print('Keras Rolling window model: finished training in %s seconds' % (time.time() - start_time))
         else:
             H = self.create_h()
             T = self.y_tr
-            print('Rolling window model: shape of T: ' + str(T.shape) + '\n And values: \n' + str(T))
+            print('Rolling window model: shape of T: ' + str(T.shape))
+            # + '\n And values: \n' + str(T))
             self.beta = np.linalg.pinv(H) * np.mat(T)
-            print('Rolling window model: finished training ELM')
-            print('Rolling window model: Beta: \n' + str(self.beta))
+            print('Rolling window model: finished training ELM in %s seconds' % (time.time() - start_time))
+            # print('Rolling window model: Beta: \n' + str(self.beta))
 
     def predict_and_plot(self, do_plot: bool = True):
         training_pred, test_pred = None, None
         future_pred = None
         last_timeframe_in_data = np.array([self.x_y_values[0, -self.num_prev_attributes:].flatten()])
-        print('Rolling window model: last_timeframe_in_data values:' + str(last_timeframe_in_data) + ' last_timeframe_in_data shape: '
-              + str(last_timeframe_in_data.shape))
+        # print('Rolling window model: last_timeframe_in_data values:' + str(last_timeframe_in_data) + ' last_timeframe_in_data shape: '
+        #       + str(last_timeframe_in_data.shape))
         if self.use_keras:
             training_pred = self.model.predict(self.x_tr)
             test_pred = self.model.predict(self.x_te)
