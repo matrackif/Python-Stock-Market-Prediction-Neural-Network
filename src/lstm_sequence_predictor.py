@@ -51,6 +51,9 @@ class LSTMSequencePredictor:
         self.plotable_y_test_pred = None
         self.plotable_y_future_pred = None
 
+        self.mse_train_cost = -1
+        self.mse_test_cost = -1
+
         self.last_observations = self.scaled_values[0, -self.num_prev_objs:]
 
         self.data_size = self.reframed.shape[0]
@@ -113,6 +116,8 @@ class LSTMSequencePredictor:
             pyplot.figure(0)
             pyplot.plot(history.history['loss'], label='Training loss (error)')
             pyplot.plot(history.history['val_loss'], label='Test loss (error)')
+            plt.title('Mean Absolute Error For Keras LSTM')
+            plt.xlabel('Epoch')
             pyplot.legend()
             pyplot.show()
 
@@ -153,6 +158,18 @@ class LSTMSequencePredictor:
         # When predicting the future we have num_future_timesteps amount of future days
         self.plotable_y_future_pred = inv_y_future_pred[:,
                                       self.index_of_plotted_feature::self.num_features].flatten()
+
+        mse_train = inv_y_pred_train[:, -(self.num_features + self.index_of_plotted_feature)]
+        mse_test = inv_y_pred_test[:, -(self.num_features + self.index_of_plotted_feature)]
+        mse_train = np.sum(np.square(np.subtract(inv_y_train[:, -(self.num_features + self.index_of_plotted_feature)],
+                                                 mse_train)))
+        mse_test = np.sum(np.square(np.subtract(inv_y_test[:, -(self.num_features + self.index_of_plotted_feature)],
+                                                mse_test)))
+
+        self.mse_train_cost = mse_train / (2 * self.training_set_size)
+        self.mse_test_cost = mse_test / (2 * self.test_set_size)
+        print('Rolling window LSTM Keras Training Set Mean Squared Error Cost: ' + str(self.mse_train_cost))
+        print('Rolling window LSTM Keras Test Set Mean Squared Error Cost: ' + str(self.mse_test_cost))
         if do_plot:
             # Plot real training data vs. the prediction of training data
             plt.figure(0)

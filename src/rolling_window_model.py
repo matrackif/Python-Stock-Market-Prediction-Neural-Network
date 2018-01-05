@@ -35,6 +35,8 @@ class RollingWindowModel:
         self.plotable_dates = np.reshape(self.plotable_dates, newshape=(-1, 1)).copy()
         self.reframed_dates = utils.series_to_supervised(self.plotable_dates, self.num_prev_timesteps,
                                                          self.num_future_timesteps)
+        self.mse_train_cost = -1
+        self.mse_test_cost = -1
 
         self.plotable_y_train_real = None
         self.plotable_y_train_pred = None
@@ -105,16 +107,26 @@ class RollingWindowModel:
         if not self.use_keras:
             h = self.x_tr * self.input_layer_weights.T
             # print('Rolling window model: created h with shape: ' + str(h.shape) + '\n And values: \n' + str(h))
+            print('Rolling window model: created h with shape: ' + str(h.shape))
         return h
 
-    def train(self):
+    def train(self, plot_history: bool = True):
         # Our model is trained to predict the stock prices at t, t+1, ..., t+n given the prices at t-k, t-k+1, ..., t-1
         # Where n is num_future_timesteps and k is num_prev_timesteps
         start_time = time.time()
         if self.use_keras:
-            self.model.fit(self.x_tr, self.y_tr, epochs=50, batch_size=16, validation_data=(self.x_te, self.y_te),
+            history = self.model.fit(self.x_tr, self.y_tr, epochs=50, batch_size=16, validation_data=(self.x_te, self.y_te),
                            verbose=2)
             print('Keras Rolling window model: finished training in %s seconds' % (time.time() - start_time))
+            # plot history
+            if plot_history:
+                plt.figure(0)
+                plt.plot(history.history['loss'], label='Training loss (error)')
+                plt.plot(history.history['val_loss'], label='Test loss (error)')
+                plt.title('Mean Squared Error For Keras Rolling Window Model')
+                plt.xlabel('Epoch')
+                plt.legend()
+                plt.show()
         else:
             H = self.create_h()
             T = self.y_tr
@@ -130,10 +142,22 @@ class RollingWindowModel:
         last_timeframe_in_data = np.array([self.x_y_values[0, -self.num_prev_attributes:].flatten()])
         # print('Rolling window model: last_timeframe_in_data values:' + str(last_timeframe_in_data) + ' last_timeframe_in_data shape: '
         #       + str(last_timeframe_in_data.shape))
+        real_train = self.y_tr[:, -(self.num_features + self.index_of_plotted_feature)]
+        real_test = self.y_te[:, -(self.num_features + self.index_of_plotted_feature)]
         if self.use_keras:
             training_pred = self.model.predict(self.x_tr)
             test_pred = self.model.predict(self.x_te)
             future_pred = self.model.predict(last_timeframe_in_data)
+            mse_train = training_pred[:, -(self.num_features + self.index_of_plotted_feature)]
+            mse_test = test_pred[:, -(self.num_features + self.index_of_plotted_feature)]
+
+            mse_train = np.sum(np.square(np.subtract(real_train, mse_train)))
+            mse_test = np.sum(np.square(np.subtract(real_test, mse_test)))
+
+            self.mse_train_cost = mse_train / (2 * self.training_set_size)
+            self.mse_test_cost = mse_test / (2 * self.test_set_size)
+            print('Rolling window Keras Training Set Mean Squared Error Cost: ' + str(self.mse_train_cost))
+            print('Rolling window Keras Test Set Mean Squared Error Cost: ' + str(self.mse_test_cost))
             # Convert 2D numpy array to plotable 1D python list of values
             self.plotable_y_train_pred = training_pred[:,
                                          -(self.num_features + self.index_of_plotted_feature)].flatten()
@@ -150,6 +174,17 @@ class RollingWindowModel:
             test_pred_h = self.x_te * self.input_layer_weights.T
             test_pred = test_pred_h * self.beta
             # Convert 2D numpy matrix to plotable 1D python list of values
+
+            mse_train = training_pred[:, -(self.num_features + self.index_of_plotted_feature)]
+            mse_test = test_pred[:, -(self.num_features + self.index_of_plotted_feature)]
+
+            mse_train = np.sum(np.square(np.subtract(real_train, mse_train)))
+            mse_test = np.sum(np.square(np.subtract(real_test, mse_test)))
+
+            self.mse_train_cost = mse_train / (2 * self.training_set_size)
+            self.mse_test_cost = mse_test / (2 * self.test_set_size)
+            print('Rolling window ELM Training Set Mean Squared Error Cost: ' + str(self.mse_train_cost))
+            print('Rolling window ELM Test Set Mean Squared Error Cost: ' + str(self.mse_test_cost))
             self.plotable_y_train_pred = \
                 training_pred[:, -(self.num_features + self.index_of_plotted_feature)].flatten().tolist()[0]
             self.plotable_y_test_pred = \
@@ -203,6 +238,6 @@ class RollingWindowModel:
 
 
 if __name__ == '__main__':
-    rolling_window_model = RollingWindowModel(use_keras=False)
+    rolling_window_model = RollingWindowModel(use_keras=True)
     rolling_window_model.train()
     rolling_window_model.predict_and_plot()
