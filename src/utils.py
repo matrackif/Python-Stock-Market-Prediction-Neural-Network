@@ -45,6 +45,7 @@ def series_to_supervised(data, n_in=1, n_out=1, dropnan=True):
 
 
 def convert_to_matplot_dates(dataframe):
+
     dates_dataframe = dataframe['timestamp'].apply(lambda x: from_timestamp_to_unix_time(x))
     # print(str(dates_dataframe.head()))
     datetimes = to_datetime(dates_dataframe.values, unit='s')

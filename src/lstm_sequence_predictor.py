@@ -166,8 +166,8 @@ class LSTMSequencePredictor:
         mse_test = np.sum(np.square(np.subtract(inv_y_test[:, -(self.num_features + self.index_of_plotted_feature)],
                                                 mse_test)))
 
-        self.mse_train_cost = mse_train / (2 * self.training_set_size)
-        self.mse_test_cost = mse_test / (2 * self.test_set_size)
+        self.mse_train_cost = mse_train / (self.training_set_size)
+        self.mse_test_cost = mse_test / (self.test_set_size)
         print('Rolling window LSTM Keras Training Set Mean Squared Error Cost: ' + str(self.mse_train_cost))
         print('Rolling window LSTM Keras Test Set Mean Squared Error Cost: ' + str(self.mse_test_cost))
         if do_plot:
