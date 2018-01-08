@@ -132,7 +132,51 @@ def run_future_days_test(future_days_step: int = 1, max_future_days: int = 30, p
     plt.show()
 
 
+def run_training_percentage_test(percentage_step: int = 1, max_training_percentage: int = 99,
+                                 init_train_percentage: int = 10, plotted_feature_str: str = 'Open',
+                                 num_previous_days: int = 14, num_future_days: int = 3,
+                                 num_hidden_neurons: int = 128, data_source_file: str = '../data/daily_MSFT.csv',
+                                 use_keras: bool = False, bias_term: int = 1):
+    train_percentage = init_train_percentage
+    csv_file_path = data_source_file
+    rolling_window_elm_train_errors = []
+    rolling_window_elm_test_errors = []
+    keras_rolling_window_train_errors = []
+    keras_rolling_window_test_errors = []
+    lstm_train_errors = []
+    lstm_test_errors = []
+    training_percentages_list = []
+    while train_percentage < max_training_percentage:
+        training_percentages_list.append(train_percentage)
+        return_val = train_and_predict(num_hidden_neurons=num_hidden_neurons, data_source_file=csv_file_path,
+                                       num_previous_days=num_previous_days, num_future_days=num_future_days,
+                                       plotted_feature_str=plotted_feature_str,
+                                       train_percentage=train_percentage, bias_term=bias_term, use_keras=use_keras,
+                                       do_plot=False)
+        if use_keras:
+            rolling_window_elm_train_errors.append(return_val[0])
+            rolling_window_elm_test_errors.append(return_val[1])
+            keras_rolling_window_train_errors.append(return_val[2])
+            keras_rolling_window_test_errors.append(return_val[3])
+            lstm_train_errors.append(return_val[4])
+            lstm_test_errors.append(return_val[5])
+        else:
+            rolling_window_elm_train_errors.append(return_val[0])
+            rolling_window_elm_test_errors.append(return_val[1])
+
+            train_percentage += percentage_step
+    plt.title('Error analysis with varying training percentage')
+    plt.xlabel('Training percentage')
+    plt.ylabel('Mean Squared Error Cost')
+    elm_train_err_plt, = plt.plot(training_percentages_list, rolling_window_elm_train_errors, label='ELM Train')
+    elm_test_err_plt, = plt.plot(training_percentages_list, rolling_window_elm_test_errors, label='ELM Test')
+    plt.legend(
+        handles=[elm_train_err_plt, elm_test_err_plt])
+    plt.show()
+
+
 if __name__ == '__main__':
     run_neuron_count_test(use_keras=False, neuron_count_step=1, init_num_hidden_neurons=1, max_neuron_count=40)
     run_prev_days_test(use_keras=False, prev_days_step=1, init_num_previous_days=1, max_prev_days=30)
     run_future_days_test(use_keras=False, future_days_step=1, init_num_future_days=1, max_future_days=30)
+    run_training_percentage_test(use_keras=False)

@@ -19,7 +19,7 @@ class LSTMSequencePredictor:
         values = values.astype('float32')
         self.num_of_prev_timesteps = num_of_previous_days
         self.num_of_future_timesteps = num_of_future_days
-        self.num_features = 5
+        self.num_features = 4
         self.num_prev_objs = self.num_features * self.num_of_prev_timesteps
         self.num_future_objs = self.num_features * self.num_of_future_timesteps
         # open = 0, high = 1, low = 2, close = 3, volume = 4

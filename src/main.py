@@ -17,12 +17,46 @@ def str2bool(v):
 def train_and_predict(plotted_feature_str: str = 'Open', num_previous_days: int = 10, num_future_days: int = 5,
                       num_hidden_neurons: int = 512, data_source_file: str = '../data/daily_MSFT.csv',
                       use_keras: bool = False, bias_term: int = 1, train_percentage: int = 80, do_plot: bool = True):
+    """
+    Constructor parses the CSV file and initializes the training and test data
+
+    Parameters
+    ----------
+    data_source_file: str
+        The path to the CSV file (from AlphaVantage API) to be parsed
+    use_keras: bool
+        If true, the model will be a "standard" neural network implemented using the Keras API, if false,
+        the model will be an ELM
+    plotted_feature_str: str
+        The feature we wish to plot (Open, High, Low, or Close)
+    num_previous_days: int
+        The number of previous days needed in order to make a single prediction
+    num_future_days: int
+        Given num_of_previous_days, we predict num_of_future_days number of future days
+    num_hidden_neurons: int
+        Number of neurons in the hidden layer
+    train_percentage: int
+        Number between 0 and 100 that represents the percentage of the CSV file data that will be training data
+        The remainder will be test data
+    bias_term: int = 1
+        Column that is prepended to the X data matrix (bias term)
+    do_plot: bool
+        If true then this method will plot, otherwise it won't
+
+    Returns
+    ----------
+    Union[Tuple[float, float], Tuple[float, float, float, float, float, float]]
+        If use_keras is False then we predict only using the ELM so we return the MSE of the training data and test data
+        found by our ELM. If use_keras is True then we return 6 floats:
+        ELM training  and test set MSE, Keras model training and test set MSE, and finally
+        the LSTM training and test set MSE.
+    """
     plotted_feature_str = plotted_feature_str.lower()
     index_of_plotted_data = {'open': 0, 'high': 1, 'low': 2, 'close': 3, 'volume': 4}[plotted_feature_str]
     rolling_window_model = None
     lstm = None
     # disjoint_data_model = None
-
+    # Initialize our models
     if use_keras:
         rolling_window_model = RollingWindowModel(use_keras=True, index_of_plotted_feature=index_of_plotted_data,
                                                   num_of_previous_days=num_previous_days,
@@ -38,6 +72,7 @@ def train_and_predict(plotted_feature_str: str = 'Open', num_previous_days: int 
         #                                         num_of_future_days=num_future_days,
         #                                         num_of_hidden_neurons=num_hidden_neurons, csv_file=data_source_file,
         #                                         train_percentage=train_percentage, bias_term=bias_term)
+        # Train and predict using our models
         # disjoint_data_model.train()
         rolling_window_model.train()
         lstm.train()
@@ -196,7 +231,7 @@ if __name__ == '__main__':
     parser.add_argument('-trp', '--training-percentage', nargs='?', type=int, default=80,
                         const=80, help='Percentage of data from CSV that will be used as training data')
     parser.add_argument('-b', '--bias', nargs='?', type=int, default=1,
-                        const=1, help='Bias term to be added to concatenated to input matrix')
+                        const=1, help='Bias term to be added to prepended  to input matrix')
     parser.add_argument('-k', '--use-keras', nargs='?', type=str, default='False',
                         const='False',
                         help='Value can be True or False, defines whether or not we wish to use Keras model')

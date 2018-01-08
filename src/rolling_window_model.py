@@ -212,6 +212,8 @@ class RollingWindowModel:
         """
         training_pred, test_pred = None, None
         future_pred = None
+
+        # last_timeframe_in_data stores the data we need in order to make a "real" future prediction
         last_timeframe_in_data = np.array([self.x_y_values[0, -self.num_prev_attributes:].flatten()])
         # real_train contains the training data of only the variable we wish to plot
         real_train = self.y_tr[:, -(self.num_features + self.index_of_plotted_feature)]
@@ -242,7 +244,9 @@ class RollingWindowModel:
                                           self.index_of_plotted_feature::self.num_features].flatten()
         else:
             last_timeframe_in_data = np.array([self.df_values[0:self.num_prev_timesteps].flatten()])
-            last_timeframe_in_data = np.hstack(([[1]], last_timeframe_in_data))
+            # Prepend bias term to the row
+            last_timeframe_in_data = np.hstack(([[self.bias]], last_timeframe_in_data))
+            # Apply the forward propagation algorithm to find the output layer matrix
             future_pred = np.mat(last_timeframe_in_data) * self.input_layer_weights.T * self.beta
             training_pred_h = self.x_tr * self.input_layer_weights.T
             training_pred = training_pred_h * self.beta
@@ -260,6 +264,8 @@ class RollingWindowModel:
             self.mse_test_cost = mse_test / (self.test_set_size)
             print('Rolling window ELM Training Set Mean Squared Error Cost: ' + str(self.mse_train_cost))
             print('Rolling window ELM Test Set Mean Squared Error Cost: ' + str(self.mse_test_cost))
+            # Create the standard Python lists that store the feature we want to plot
+            # We have to convert a 2D NumPy Array to a 1D Python array
             self.plotable_y_train_pred = \
                 training_pred[:, -(self.num_features + self.index_of_plotted_feature)].flatten().tolist()[0]
             self.plotable_y_test_pred = \

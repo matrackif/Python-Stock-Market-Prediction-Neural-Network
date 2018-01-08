@@ -12,6 +12,7 @@ from PyQt5.QtGui import *
 
 
 class StockMarketPredictorMainWindow(QMainWindow):
+    """Class that inherits from QMainWindow and handles the logic and interacting with the GUI"""
     def __init__(self):
         super().__init__()
         self.ui = Ui_SMPMainWindow()
@@ -26,6 +27,10 @@ class StockMarketPredictorMainWindow(QMainWindow):
         self.predicting_process.finished.connect(lambda: self.ui.trainAndPredictButton.setEnabled(True))
 
     def handle_train_and_predict_button(self):
+        """
+        When the "Train and Predict" button is pressed we execute a QProcess that runs our main python script
+        With our specific arguments passed from the GUI
+        """
         num_prev_days = self.ui.numPrevDaysEdit.text()
         num_future_days = self.ui.numFutureDaysEdit.text()
         num_hidden_neurons = self.ui.numHiddenNeuronsEdit.text()
