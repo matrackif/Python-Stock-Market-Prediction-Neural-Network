@@ -87,7 +87,7 @@ class Ui_SMPMainWindow(object):
         self.plottedFeatureComboBox.addItem("")
         self.formLayout.setWidget(5, QtWidgets.QFormLayout.FieldRole, self.plottedFeatureComboBox)
         self.trainAndPredictButton = QtWidgets.QPushButton(self.centralwidget)
-        self.trainAndPredictButton.setGeometry(QtCore.QRect(340, 570, 141, 23))
+        self.trainAndPredictButton.setGeometry(QtCore.QRect(260, 570, 141, 23))
         self.trainAndPredictButton.setObjectName("trainAndPredictButton")
         self.verticalLayoutWidget = QtWidgets.QWidget(self.centralwidget)
         self.verticalLayoutWidget.setGeometry(QtCore.QRect(620, 120, 111, 80))
@@ -115,6 +115,9 @@ class Ui_SMPMainWindow(object):
         self.stdOutputLabel = QtWidgets.QLabel(self.centralwidget)
         self.stdOutputLabel.setGeometry(QtCore.QRect(370, 320, 91, 16))
         self.stdOutputLabel.setObjectName("stdOutputLabel")
+        self.stopButton = QtWidgets.QPushButton(self.centralwidget)
+        self.stopButton.setGeometry(QtCore.QRect(430, 570, 141, 23))
+        self.stopButton.setObjectName("stopButton")
         SMPMainWindow.setCentralWidget(self.centralwidget)
         self.menubar = QtWidgets.QMenuBar(SMPMainWindow)
         self.menubar.setGeometry(QtCore.QRect(0, 0, 858, 21))
@@ -156,15 +159,6 @@ class Ui_SMPMainWindow(object):
         self.mateuszLabel.setText(_translate("SMPMainWindow", "Mateusz Grossman"))
         self.fardinLabel.setText(_translate("SMPMainWindow", "Fardin Mohammad"))
         self.stdOutputLabel.setText(_translate("SMPMainWindow", "Standard Output"))
+        self.stopButton.setText(_translate("SMPMainWindow", "Stop"))
 
 import mini_logo_resource_rc
-
-if __name__ == "__main__":
-    import sys
-    app = QtWidgets.QApplication(sys.argv)
-    SMPMainWindow = QtWidgets.QMainWindow()
-    ui = Ui_SMPMainWindow()
-    ui.setupUi(SMPMainWindow)
-    SMPMainWindow.show()
-    sys.exit(app.exec_())
-

@@ -24,7 +24,11 @@ class StockMarketPredictorMainWindow(QMainWindow):
         self.predicting_process.readyReadStandardOutput.connect(self.stdout_ready)
         self.predicting_process.readyReadStandardError.connect(self.stderr_ready)
         self.predicting_process.started.connect(lambda: self.ui.trainAndPredictButton.setEnabled(False))
+        self.predicting_process.started.connect(lambda: self.ui.stopButton.setEnabled(True))
         self.predicting_process.finished.connect(lambda: self.ui.trainAndPredictButton.setEnabled(True))
+        self.predicting_process.finished.connect(lambda: self.ui.stopButton.setEnabled(False))
+        self.ui.stopButton.clicked.connect(self.handle_kill_button)
+        self.ui.stopButton.setEnabled(False)
 
     def handle_train_and_predict_button(self):
         """
@@ -48,9 +52,9 @@ class StockMarketPredictorMainWindow(QMainWindow):
         print('plotted_feature: ' + plotted_feature)
         print('use_keras: ' + use_keras)
         python_interpreter = 'py -3 '
-        program_name = ' main.py '
+        program_name = 'main.exe '
         # TODO add plotted feature arg
-        self.command = python_interpreter + program_name \
+        self.command = program_name \
                        + '-hc ' + num_hidden_neurons \
                        + ' -pd ' + num_prev_days \
                        + ' -fd ' + num_future_days \
@@ -67,6 +71,9 @@ class StockMarketPredictorMainWindow(QMainWindow):
                                                 "CSV Files (*.csv)")
         if len(files) > 0:
             self.ui.csvPathEdit.setText(files[0])
+
+    def handle_kill_button(self):
+        self.predicting_process.kill()
 
     def append_to_stdout_textedit(self, text):
         self.ui.stdOutputTextEdit.moveCursor(QTextCursor.End)

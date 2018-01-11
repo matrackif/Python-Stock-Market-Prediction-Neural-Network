@@ -198,7 +198,7 @@
    <widget class="QPushButton" name="trainAndPredictButton">
     <property name="geometry">
      <rect>
-      <x>340</x>
+      <x>260</x>
       <y>570</y>
       <width>141</width>
       <height>23</height>
@@ -278,6 +278,19 @@
     </property>
     <property name="text">
      <string>Standard Output</string>
+    </property>
+   </widget>
+   <widget class="QPushButton" name="stopButton">
+    <property name="geometry">
+     <rect>
+      <x>430</x>
+      <y>570</y>
+      <width>141</width>
+      <height>23</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string>Stop</string>
     </property>
    </widget>
   </widget>
